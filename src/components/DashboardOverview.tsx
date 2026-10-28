@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 
 import { NagekeoBannerSlider } from './NagekeoBannerSlider';
+import { MarqueeTicker } from './MarqueeTicker';
 
 interface DashboardOverviewProps {
   packages: ProcurementPackage[];
@@ -105,6 +106,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Text Berjalan (Running Text / Marquee Ticker) Penghias Pengadaan */}
+      <MarqueeTicker className="rounded-xl shadow-xs" />
 
       {/* 10-Photo Nagekeo Panorama Banner Slider */}
       <NagekeoBannerSlider />

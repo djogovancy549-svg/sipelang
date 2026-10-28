@@ -262,8 +262,12 @@ export default function App() {
             {activeTab === 'tahapan-proses' && (
               <StageProcessView
                 packages={packages}
+                documents={documents}
                 onUpdatePackageStage={handleUpdatePackageStage}
                 selectedPackageId={stageTrackerPackageId}
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenReviewDoc={(doc) => openReviewForDocument(doc)}
+                onUpdateDocumentReview={handleUpdateDocumentReview}
               />
             )}
 

@@ -98,6 +98,41 @@ export interface ProcurementPackage {
   notes?: string;
 }
 
+export type MatrixEvaluationStatus = 'MEMENUHI' | 'ADA_CATATAN' | 'TIDAK_MEMENUHI';
+export type ReviewerRoleType = 'PEJABAT_PENGADAAN' | 'BAGIAN_PENGADAAN' | 'STAF_PBJ' | 'ADMIN_PBJ';
+
+export interface ReviewMatrixCategoryConfig {
+  id: string;
+  code: string;
+  label: string;
+  shortLabel: string;
+  isCustom?: boolean;
+}
+
+export interface ReviewMatrixItem {
+  id: string;
+  category: string; // Dynamic category code e.g. "KAK", "HPS", "K3_KAPASITAS", etc.
+  categoryLabel: string;
+  question: string;
+  regulationReference: string;
+  evaluationStatus: MatrixEvaluationStatus;
+  evidenceNotes: string;
+  addedByRole?: ReviewerRoleType;
+  addedByName?: string;
+  isCustom?: boolean;
+}
+
+export interface DocumentReviewMatrixState {
+  docId: string;
+  reviewerRole: ReviewerRoleType;
+  reviewerName: string;
+  reviewerNip: string;
+  reviewDate: string;
+  finalConclusion: 'LAYAK' | 'PERLU_PERBAIKAN' | 'TIDAK_LAYAK';
+  summaryNotes: string;
+  items: ReviewMatrixItem[];
+}
+
 export interface ReviewChecklistCriteria {
   id: string;
   category: string;
