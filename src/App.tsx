@@ -206,14 +206,18 @@ export default function App() {
 
   const pendingReviewCount = documents.filter((d) => d.reviewStatus === 'MENUNGGU_REVIEW').length;
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   return (
     <div className="flex h-screen bg-stone-100/70 font-sans text-stone-900 overflow-hidden">
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (Collapsible Vertical Bar) */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab)}
         pendingReviewCount={pendingReviewCount}
         totalPackageCount={packages.length}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       {/* Main View Area */}
