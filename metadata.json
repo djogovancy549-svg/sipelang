@@ -1,0 +1,6 @@
+{
+  "name": "SIPELANG - Monitoring Pengadaan Langsung",
+  "description": "Dashboard Pejabat Pengadaan untuk review dokumen, monitoring tahapan proses, dan pengarsipan paket pengadaan langsung barang, jasa konsultansi, dan konstruksi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
