@@ -29,7 +29,7 @@ export const ReviewPrintModal: React.FC<ReviewPrintModalProps> = ({
 
   const pkgName = procurementPackage?.name || documentItem.title;
   const skpdName = procurementPackage?.skpdName || 'Dinas Pekerjaan Umum dan Penataan Ruang';
-  const paguVal = procurementPackage?.paguValue || 100000000;
+  const paguVal = procurementPackage?.budgetCeiling || 100000000;
   const hpsVal = procurementPackage?.hpsValue || 99945000;
   const codeRUP = procurementPackage?.codeRUP || '66036644';
   const vendorName = procurementPackage?.vendorName || 'CV. Bahtera Mandiri';

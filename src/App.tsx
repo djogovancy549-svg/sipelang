@@ -78,12 +78,11 @@ export default function App() {
   const [reviewSelectedDocId, setReviewSelectedDocId] = useState<string | undefined>(undefined);
   const [uploadPreselectedPackageId, setUploadPreselectedPackageId] = useState<string | undefined>(undefined);
 
-  // Sync to localStorage
+  // Ensure initial packages load if storage is empty
   useEffect(() => {
-    // Force clear old dummy data on startup
-    localStorage.removeItem('sipelang_packages_v1');
-    localStorage.removeItem('sipelang_documents_v1');
-    localStorage.removeItem('sipelang_opd_configs_v1');
+    if (packages.length === 0 && INITIAL_PACKAGES.length > 0) {
+      setPackages(INITIAL_PACKAGES);
+    }
   }, []);
 
   useEffect(() => {
