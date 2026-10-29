@@ -36,7 +36,11 @@ export const NagekeoBannerSlider: React.FC = () => {
     setCurrentIndex((prev) => (prev + 1) % totalSlides);
   };
 
-  const currentSlide: NagekeoSlide = NAGEKEO_SLIDES[currentIndex];
+  const currentSlide: NagekeoSlide | undefined = NAGEKEO_SLIDES[currentIndex];
+
+  if (totalSlides === 0 || !currentSlide) {
+    return null;
+  }
 
   return (
     <div

@@ -80,6 +80,13 @@ export default function App() {
 
   // Sync to localStorage
   useEffect(() => {
+    // Force clear old dummy data on startup
+    localStorage.removeItem('sipelang_packages_v1');
+    localStorage.removeItem('sipelang_documents_v1');
+    localStorage.removeItem('sipelang_opd_configs_v1');
+  }, []);
+
+  useEffect(() => {
     try {
       localStorage.setItem('sipelang_packages_v1', JSON.stringify(packages));
     } catch (e) {
