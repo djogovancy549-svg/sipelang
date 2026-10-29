@@ -77,7 +77,14 @@ export async function uploadFileToDrive(
 }
 
 export async function sendWebhookPayload(
-  eventType: 'PACKAGE_CREATED' | 'DOCUMENT_UPLOADED' | 'PHOTO_UPLOADED' | 'PACKAGE_ARCHIVED' | 'STAGE_UPDATED',
+  eventType:
+    | 'PACKAGE_CREATED'
+    | 'DOCUMENT_UPLOADED'
+    | 'PHOTO_UPLOADED'
+    | 'PACKAGE_ARCHIVED'
+    | 'STAGE_UPDATED'
+    | 'OPD_NUMBERING_UPDATED'
+    | 'MATRIX_UPDATED',
   data: Record<string, any> // Expecting a flat object
 ): Promise<{ success: boolean; message: string }> {
   const settings = getStoredIntegrationSettings();
@@ -111,3 +118,115 @@ export async function sendWebhookPayload(
     return { success: false, message: 'Gagal mengirim data.' };
   }
 }
+
+export interface DriveSyncedFile {
+  id: string;
+  name: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  date: string;
+  ts: number;
+  folder: 'dokumen' | 'foto';
+  thumbnail: string;
+  downloadUrl: string;
+}
+
+export function formatDriveBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) return '0 KB';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+/**
+ * Fetch all files directly from Google Drive via the Apps Script Web App (?action=getFiles)
+ */
+export async function fetchFilesFromDrive(
+  customWebhookUrl?: string
+): Promise<{ success: boolean; files?: DriveSyncedFile[]; message: string }> {
+  const settings = getStoredIntegrationSettings();
+  const url = (customWebhookUrl || settings.webhookUrl || '').trim();
+
+  if (!url) {
+    return {
+      success: false,
+      message: 'URL Webhook Google Apps Script belum dikonfigurasi di Pengaturan.',
+    };
+  }
+
+  try {
+    const separator = url.includes('?') ? '&' : '?';
+    const requestUrl = `${url}${separator}action=getFiles&_t=${Date.now()}`;
+    const response = await fetch(requestUrl, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}`);
+    }
+
+    const data = await response.json();
+    let fileList: DriveSyncedFile[] = [];
+
+    if (Array.isArray(data)) {
+      fileList = data;
+    } else if (data && Array.isArray(data.files)) {
+      fileList = data.files;
+    } else {
+      throw new Error('Format data tidak sesuai, pastikan Code.gs sudah diperbarui');
+    }
+
+    return {
+      success: true,
+      files: fileList,
+      message: `Berhasil menarik ${fileList.length} file dari Google Drive!`,
+    };
+  } catch (error) {
+    console.error('Error fetching files from Drive Apps Script:', error);
+    return {
+      success: false,
+      message: `Gagal membaca data dari Apps Script: ${error instanceof Error ? error.message : String(error)}. Pastikan Web App di-deploy dengan akses "Anyone".`,
+    };
+  }
+}
+
+/**
+ * Request Apps Script to delete a file by ID from Drive
+ */
+export async function deleteFileFromDrive(
+  fileId: string,
+  customWebhookUrl?: string
+): Promise<{ success: boolean; message: string }> {
+  const settings = getStoredIntegrationSettings();
+  const url = (customWebhookUrl || settings.webhookUrl || '').trim();
+
+  if (!url) {
+    return {
+      success: false,
+      message: 'URL Webhook belum dikonfigurasi.',
+    };
+  }
+
+  try {
+    const separator = url.includes('?') ? '&' : '?';
+    const requestUrl = `${url}${separator}action=deleteFile&fileId=${encodeURIComponent(fileId)}&_t=${Date.now()}`;
+    const response = await fetch(requestUrl, {
+      method: 'GET',
+    });
+
+    const data = await response.json();
+    if (data && data.success) {
+      return { success: true, message: 'File berhasil dihapus dari Google Drive & Sheet!' };
+    }
+    return { success: false, message: data?.message || 'Gagal menghapus file dari Drive.' };
+  } catch (error) {
+    console.error('Error deleting file via Apps Script:', error);
+    return {
+      success: false,
+      message: `Gagal menghubungi server Apps Script: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+

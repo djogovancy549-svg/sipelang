@@ -48,6 +48,10 @@ export interface DocumentItem {
   reviewerName?: string;
   reviewDate?: string;
   fileType: 'pdf' | 'doc' | 'xls' | 'zip' | 'jpg' | 'png';
+  fileUrl?: string; // Direct link to Google Drive file
+  driveFileId?: string; // Google Drive File ID for deletion and sync
+  downloadUrl?: string; // Direct download link
+  thumbnailUrl?: string; // Image thumbnail URL
   images?: string[]; // For documentation with multiple photos
 }
 

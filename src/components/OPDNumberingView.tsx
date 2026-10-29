@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { OPDNumberingConfig } from '../types/procurement';
 import { generateAllDocumentNumbers } from '../utils/numberingGenerator';
+import { SecurityPinModal } from './SecurityPinModal';
 import {
   Plus,
   Edit3,
@@ -166,41 +167,19 @@ export const OPDNumberingView: React.FC<OPDNumberingViewProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* DELETION CONFIRMATION BANNER (iFrame Safe - In-App Banner) */}
-      {deleteConfirmId && (
-        <div className="p-4 bg-rose-900 text-white rounded-2xl shadow-lg border border-rose-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center font-bold text-white shrink-0">
-              ⚠️
-            </div>
-            <div>
-              <p className="font-bold text-xs">
-                Konfirmasi Hapus Buku Registrasi OPD
-              </p>
-              <p className="text-[11px] text-rose-200">
-                Apakah Anda yakin ingin menghapus konfigurasi penomoran untuk <strong className="text-white">"{deleteConfirmName}"</strong>?
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setDeleteConfirmId(null)}
-              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
-            >
-              Batal
-            </button>
-            <button
-              type="button"
-              onClick={confirmDeleteAction}
-              className="px-4 py-1.5 bg-white text-rose-900 hover:bg-rose-50 font-extrabold rounded-xl text-xs transition-colors shadow-xs cursor-pointer"
-            >
-              Ya, Hapus OPD
-            </button>
-          </div>
-        </div>
-      )}
+      {/* DELETION CONFIRMATION WITH DAILY PIN */}
+      <SecurityPinModal
+        isOpen={!!deleteConfirmId}
+        title="Hapus Buku Registrasi OPD"
+        itemName={deleteConfirmName}
+        itemTypeLabel="Buku Register OPD"
+        warningNote="Seluruh format rumus penomoran dan counter dokumen untuk OPD ini akan dihapus dari sistem SIPELANG."
+        onConfirm={confirmDeleteAction}
+        onClose={() => {
+          setDeleteConfirmId(null);
+          setDeleteConfirmName('');
+        }}
+      />
 
       {/* ASN OFFICIAL BUKU REGISTRASI HEADER CARD */}
       <div className="bg-[#23090e] text-rose-50 rounded-2xl p-5 shadow-md border border-[#3a141b] relative overflow-hidden">

@@ -3,8 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { uploadFileToDrive } from '../utils/webhookService';
+import React, { useState, useEffect } from 'react';
+import {
+  uploadFileToDrive,
+  fetchFilesFromDrive,
+  deleteFileFromDrive,
+  formatDriveBytes,
+  getStoredIntegrationSettings,
+  DriveSyncedFile,
+} from '../utils/webhookService';
 import {
   ProcurementPackage,
   DocumentItem,
@@ -13,6 +20,7 @@ import {
 import { formatDate, formatRupiah, getReviewStatusBadge } from '../utils/formatters';
 import { NagekeoBannerSlider } from './NagekeoBannerSlider';
 import { MarqueeTicker } from './MarqueeTicker';
+import { SecurityPinModal } from './SecurityPinModal';
 import {
   UploadCloud,
   FileText,
@@ -36,6 +44,12 @@ import {
   Calendar,
   MapPin,
   Layers,
+  RefreshCw,
+  ExternalLink,
+  Download,
+  Globe,
+  FolderCheck,
+  HelpCircle,
 } from 'lucide-react';
 
 interface UploadDocumentViewProps {
@@ -44,6 +58,9 @@ interface UploadDocumentViewProps {
   onDocumentUploaded: (doc: DocumentItem) => void;
   onReviewDocument: (doc: DocumentItem) => void;
   preselectedPackageId?: string;
+  onDocumentsSynced?: (syncedDocs: DocumentItem[]) => void;
+  onDeleteDocument?: (docId: string, driveFileId?: string) => void;
+  onOpenGoogleSettings?: () => void;
 }
 
 export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
@@ -52,9 +69,23 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
   onDocumentUploaded,
   onReviewDocument,
   preselectedPackageId,
+  onDocumentsSynced,
+  onDeleteDocument,
+  onOpenGoogleSettings,
 }) => {
-  // Main Sub-Tab State: 'DOCUMENTS' (Berkas Dokumen) vs 'VISUAL_DATA' (Data Visual Kegiatan)
-  const [activeSubTab, setActiveSubTab] = useState<'DOCUMENTS' | 'VISUAL_DATA'>('DOCUMENTS');
+  // Main Sub-Tab State: 'DOCUMENTS' | 'VISUAL_DATA' | 'EMBED_UPLOAD'
+  const [activeSubTab, setActiveSubTab] = useState<'DOCUMENTS' | 'VISUAL_DATA' | 'EMBED_UPLOAD'>('DOCUMENTS');
+
+  // Integration settings
+  const integrationSettings = getStoredIntegrationSettings();
+
+  // Syncing State
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedTime, setLastSyncedTime] = useState<string | null>(null);
+
+  // Delete modal state
+  const [deleteConfirmDoc, setDeleteConfirmDoc] = useState<DocumentItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Modal State for Standard Document Upload
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
@@ -105,6 +136,80 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
+  };
+
+  // Sync files from Google Drive / Apps Script
+  const handleSyncFromDrive = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetchFilesFromDrive();
+      if (!res.success || !res.files) {
+        showToast(res.message, 'error');
+        setIsSyncing(false);
+        return;
+      }
+
+      const defaultPkg = packages[0]?.id || 'pkg-drive-sync';
+      const newItems: DocumentItem[] = res.files.map((f) => {
+        const ext = f.name.split('.').pop()?.toLowerCase() || '';
+        const isImg = f.folder === 'foto' || ['jpg', 'jpeg', 'png', 'webp'].includes(ext);
+        const isDoc = ['doc', 'docx'].includes(ext);
+        const isXls = ['xls', 'xlsx'].includes(ext);
+        const isZip = ['zip', 'rar'].includes(ext);
+
+        return {
+          id: `drive-${f.id}`,
+          packageId: defaultPkg,
+          title: f.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' '),
+          category: (f.folder === 'foto' ? 'DOKUMENTASI_FOTO' : 'PERSIAPAN') as DocumentCategory,
+          fileName: f.name,
+          fileSize: formatDriveBytes(f.size),
+          uploadDate: f.date || new Date().toISOString().slice(0, 10),
+          uploadedBy: 'Google Drive Apps Script',
+          reviewStatus: 'MENUNGGU_REVIEW',
+          notes: `File terbaca dari Folder Drive: ${f.folder.toUpperCase()}`,
+          fileType: isImg ? 'jpg' : isDoc ? 'doc' : isXls ? 'xls' : isZip ? 'zip' : 'pdf',
+          fileUrl: f.url,
+          driveFileId: f.id,
+          downloadUrl: f.downloadUrl,
+          thumbnailUrl: f.thumbnail,
+          images: isImg ? [f.thumbnail, f.url] : undefined,
+        };
+      });
+
+      if (onDocumentsSynced) {
+        onDocumentsSynced(newItems);
+      }
+      setLastSyncedTime(new Date().toLocaleTimeString('id-ID'));
+      showToast(`Berhasil membaca & menyinkronkan ${newItems.length} file dari Google Drive ke SIPELANG!`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal menarik file dari Google Drive. Pastikan URL Webhook sudah benar.', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Confirm delete document
+  const handleExecuteDelete = async () => {
+    if (!deleteConfirmDoc) return;
+    setIsDeleting(true);
+
+    try {
+      if (deleteConfirmDoc.driveFileId) {
+        await deleteFileFromDrive(deleteConfirmDoc.driveFileId);
+      }
+      if (onDeleteDocument) {
+        onDeleteDocument(deleteConfirmDoc.id, deleteConfirmDoc.driveFileId);
+      }
+      showToast(`Berkas "${deleteConfirmDoc.title}" berhasil dihapus dari SIPELANG dan Drive!`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Gagal menghapus file.', 'error');
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmDoc(null);
+    }
   };
 
   const currentDocPackage = packages.find((p) => p.id === selectedPackageId) || packages[0];
@@ -339,34 +444,45 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto shrink-0 flex-wrap">
+            {/* Sync from Google Drive Button */}
+            <button
+              onClick={handleSyncFromDrive}
+              disabled={isSyncing}
+              className="w-full sm:w-auto px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+              title="Baca data file dokumen & foto dari Google Drive Apps Script ke SIPELANG"
+            >
+              <RefreshCw className={`w-4 h-4 text-emerald-200 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'MEMBACA DARI DRIVE...' : 'TARIK DATA DARI DRIVE'}</span>
+            </button>
+
             {activeSubTab === 'DOCUMENTS' ? (
               <button
                 onClick={() => setIsDocModalOpen(true)}
-                className="w-full sm:w-auto px-5 py-3 bg-[#701524] hover:bg-[#58101c] text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-[#701524]/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 group"
+                className="w-full sm:w-auto px-4 py-2.5 bg-[#701524] hover:bg-[#58101c] text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-[#701524]/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 group"
               >
-                <Plus className="w-4.5 h-4.5 text-rose-200 group-hover:rotate-90 transition-transform" />
+                <Plus className="w-4 h-4 text-rose-200 group-hover:rotate-90 transition-transform" />
                 <span>UNGGAH DOKUMEN</span>
               </button>
-            ) : (
+            ) : activeSubTab === 'VISUAL_DATA' ? (
               <button
                 onClick={() => setIsPhotoModalOpen(true)}
-                className="w-full sm:w-auto px-5 py-3 bg-indigo-900 hover:bg-indigo-950 text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-indigo-900/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 group"
+                className="w-full sm:w-auto px-4 py-2.5 bg-indigo-900 hover:bg-indigo-950 text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-indigo-900/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 group"
               >
-                <Camera className="w-4.5 h-4.5 text-indigo-200 group-hover:scale-110 transition-transform" />
+                <Camera className="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform" />
                 <span>UNGGAH FOTO KEGIATAN</span>
               </button>
-            )}
+            ) : null}
 
-            <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl flex items-center gap-3 w-full sm:w-auto justify-around">
-              <div className="text-center px-2">
+            <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl flex items-center gap-3 w-full sm:w-auto justify-around text-xs">
+              <div className="text-center px-1.5">
                 <div className="text-[10px] font-semibold text-stone-500">Dokumen</div>
-                <div className="text-base font-extrabold font-mono text-stone-900">{standardDocs.length}</div>
+                <div className="text-sm font-extrabold font-mono text-stone-900">{standardDocs.length}</div>
               </div>
-              <div className="h-7 w-px bg-stone-200" />
-              <div className="text-center px-2">
+              <div className="h-6 w-px bg-stone-200" />
+              <div className="text-center px-1.5">
                 <div className="text-[10px] font-semibold text-indigo-600">Foto Kegiatan</div>
-                <div className="text-base font-extrabold font-mono text-indigo-700">{visualDocs.length}</div>
+                <div className="text-sm font-extrabold font-mono text-indigo-700">{visualDocs.length}</div>
               </div>
             </div>
           </div>
@@ -383,7 +499,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
       <div className="flex items-center gap-2 bg-stone-200/80 p-1.5 rounded-2xl border border-stone-300/80">
         <button
           onClick={() => setActiveSubTab('DOCUMENTS')}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeSubTab === 'DOCUMENTS'
               ? 'bg-[#701524] text-white shadow-sm'
               : 'bg-transparent text-stone-700 hover:bg-stone-300/60'
@@ -395,14 +511,26 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
 
         <button
           onClick={() => setActiveSubTab('VISUAL_DATA')}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeSubTab === 'VISUAL_DATA'
               ? 'bg-indigo-900 text-white shadow-sm'
               : 'bg-transparent text-stone-700 hover:bg-stone-300/60'
           }`}
         >
           <Camera className="w-4 h-4" />
-          <span>2. DATA VISUAL & FOTO KEGIATAN ({visualDocs.length})</span>
+          <span>2. DATA VISUAL & FOTO ({visualDocs.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab('EMBED_UPLOAD')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeSubTab === 'EMBED_UPLOAD'
+              ? 'bg-amber-800 text-white shadow-sm'
+              : 'bg-transparent text-stone-700 hover:bg-stone-300/60'
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          <span>3. WEB UPLOAD APPS SCRIPT</span>
         </button>
       </div>
 
@@ -521,6 +649,11 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
                           >
                             {statusBadge.label}
                           </span>
+                          {(doc.driveFileId || doc.fileUrl) && (
+                            <span className="text-[9px] font-mono font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                              ☁️ Drive
+                            </span>
+                          )}
                         </div>
                         <span className="text-[10px] font-mono text-stone-400 font-semibold shrink-0">
                           {doc.fileSize}
@@ -553,6 +686,28 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
+                        {doc.fileUrl && (
+                          <a
+                            href={doc.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition-colors cursor-pointer"
+                            title="Buka Berkas di Google Drive"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {doc.downloadUrl && (
+                          <a
+                            href={doc.downloadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-xl border border-stone-200 bg-white hover:bg-emerald-50 text-emerald-700 text-xs font-semibold transition-colors cursor-pointer"
+                            title="Unduh Berkas Langsung"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </a>
+                        )}
                         <button
                           onClick={() => setPreviewDoc(doc)}
                           className="p-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 text-xs font-semibold transition-colors cursor-pointer"
@@ -567,6 +722,13 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
                         >
                           <FileCheck2 className="w-3.5 h-3.5" />
                           <span>Telaah</span>
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmDoc(doc)}
+                          className="p-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
+                          title="Hapus Berkas (SIPELANG & Drive)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -685,19 +847,169 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
 
                     <div className="pt-2 border-t border-stone-200/80 flex items-center justify-between text-[11px] text-stone-500 font-medium">
                       <span>Oleh: <strong className="text-stone-800">{doc.uploadedBy}</strong></span>
-                      <button
-                        onClick={() => setPreviewDoc(doc)}
-                        className="px-3 py-1.5 bg-indigo-900 hover:bg-indigo-950 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Lihat Semua Foto</span>
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {doc.fileUrl && (
+                          <a
+                            href={doc.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-xl border border-stone-200 bg-white hover:bg-blue-50 text-blue-700 text-xs font-semibold transition-colors cursor-pointer"
+                            title="Buka Foto di Google Drive"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => setDeleteConfirmDoc(doc)}
+                          className="p-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
+                          title="Hapus Foto Kegiatan (SIPELANG & Drive)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setPreviewDoc(doc)}
+                          className="px-3 py-1.5 bg-indigo-900 hover:bg-indigo-950 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Lihat Foto</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
               })
             )}
           </div>
+        </div>
+      )}
+
+      {/* TAB 3: EMBEDDED WEB UPLOAD APPS SCRIPT & DIRECT DRIVE HUBS */}
+      {activeSubTab === 'EMBED_UPLOAD' && (
+        <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-6 shadow-sm space-y-5">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-stone-100">
+            <div>
+              <h2 className="text-base font-black text-stone-900 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-amber-700" />
+                <span>Web Upload Google Apps Script Terintegrasi</span>
+              </h2>
+              <p className="text-xs text-stone-500 mt-1 max-w-2xl leading-relaxed">
+                Aplikasi upload mandiri berbasis Google Apps Script yang menyimpan berkas langsung ke Google Drive Folder Dokumen & Foto serta mencatat metadata ke Google Spreadsheet.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleSyncFromDrive}
+                disabled={isSyncing}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan ke SIPELANG'}</span>
+              </button>
+
+              {onOpenGoogleSettings && (
+                <button
+                  onClick={onOpenGoogleSettings}
+                  className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FolderCheck className="w-3.5 h-3.5 text-stone-600" />
+                  <span>Pengaturan Webhook</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Access Folders Card */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a
+              href="https://drive.google.com/drive/folders/1FI_KsR6FAUuDIYs3ule8eBbnz4oUH-gh?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-200 hover:border-rose-400 hover:shadow-xs transition-all flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-xl border border-rose-200 text-[#701524]">
+                  <FolderOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-xs text-stone-900 group-hover:text-[#701524]">
+                    Folder Drive Berkas Dokumen Resmi
+                  </h3>
+                  <p className="text-[10px] font-mono text-stone-500 mt-0.5">
+                    ID: 1FI_KsR6FAUuDIYs3ule8eBbnz4oUH-gh
+                  </p>
+                </div>
+              </div>
+              <ExternalLink className="w-4 h-4 text-stone-400 group-hover:text-[#701524]" />
+            </a>
+
+            <a
+              href="https://drive.google.com/drive/folders/1oXZ8J4QG9j38x0ZkzqSQMlYH5WDuIejK?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3.5 bg-indigo-50/60 rounded-2xl border border-indigo-200 hover:border-indigo-400 hover:shadow-xs transition-all flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-xl border border-indigo-200 text-indigo-700">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-xs text-stone-900 group-hover:text-indigo-900">
+                    Folder Drive Dokumentasi Foto Lapangan
+                  </h3>
+                  <p className="text-[10px] font-mono text-stone-500 mt-0.5">
+                    ID: 1oXZ8J4QG9j38x0ZkzqSQMlYH5WDuIejK
+                  </p>
+                </div>
+              </div>
+              <ExternalLink className="w-4 h-4 text-stone-400 group-hover:text-indigo-900" />
+            </a>
+          </div>
+
+          {/* Iframe View / Web App Frame */}
+          {integrationSettings.webhookUrl ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs text-stone-500 px-1">
+                <span>Tampilan Web App Apps Script:</span>
+                <a
+                  href={integrationSettings.webhookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#701524] font-bold hover:underline flex items-center gap-1"
+                >
+                  <span>Buka di Layar Penuh</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+              <div className="border border-stone-200 rounded-2xl overflow-hidden bg-stone-50 shadow-inner h-[600px]">
+                <iframe
+                  src={integrationSettings.webhookUrl}
+                  title="SIPELANG Apps Script File Manager"
+                  className="w-full h-full border-0"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-300 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                <Globe className="w-6 h-6" />
+              </div>
+              <h3 className="font-extrabold text-sm text-stone-800">
+                URL Webhook Apps Script Belum Dimasukkan
+              </h3>
+              <p className="text-xs text-stone-500 max-w-md mx-auto">
+                Masukkan URL Web App hasil deploy Google Apps Script Anda pada menu Pengaturan Integrasi agar web upload tampil di sini.
+              </p>
+              {onOpenGoogleSettings && (
+                <button
+                  onClick={onOpenGoogleSettings}
+                  className="px-4 py-2 bg-[#701524] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#58101c] transition-all cursor-pointer"
+                >
+                  Buka Pengaturan Integrasi
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1192,6 +1504,21 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
           />
         </div>
       )}
+      {/* 7. DELETE CONFIRMATION WITH DAILY PIN */}
+      <SecurityPinModal
+        isOpen={!!deleteConfirmDoc}
+        title="Hapus Berkas dari SIPELANG & Drive"
+        itemName={deleteConfirmDoc?.title}
+        itemTypeLabel={deleteConfirmDoc?.category === 'DOKUMENTASI_FOTO' ? 'Dokumentasi Foto' : 'Berkas Dokumen'}
+        warningNote={
+          deleteConfirmDoc?.driveFileId
+            ? 'File ini terhubung dengan Google Drive. Menghapus berkas ini akan memindahkannya ke Trash di Google Drive dan menghapus catatan log dari Google Sheet.'
+            : 'Berkas ini akan dihapus dari daftar dokumen SIPELANG.'
+        }
+        isProcessing={isDeleting}
+        onConfirm={handleExecuteDelete}
+        onClose={() => setDeleteConfirmDoc(null)}
+      />
     </div>
   );
 };

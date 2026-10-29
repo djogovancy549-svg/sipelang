@@ -19,6 +19,7 @@ import {
   ROLE_LABELS,
 } from '../data/reviewMatrixTemplates';
 import { MarqueeTicker } from './MarqueeTicker';
+import { SecurityPinModal } from './SecurityPinModal';
 import {
   X,
   ShieldCheck,

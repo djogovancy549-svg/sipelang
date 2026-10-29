@@ -161,6 +161,26 @@ export default function App() {
     });
   };
 
+  const handleDocumentsSynced = (syncedDocs: DocumentItem[]) => {
+    setDocuments((prev) => {
+      // Avoid duplicates by matching driveFileId or id
+      const existingDriveIds = new Set(prev.map((d) => d.driveFileId).filter(Boolean));
+      const existingIds = new Set(prev.map((d) => d.id));
+      
+      const toAdd = syncedDocs.filter((d) => {
+        if (d.driveFileId && existingDriveIds.has(d.driveFileId)) return false;
+        if (existingIds.has(d.id)) return false;
+        return true;
+      });
+
+      return [...toAdd, ...prev];
+    });
+  };
+
+  const handleDeleteDocument = (docId: string) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
+  };
+
   const handleUpdatePackageStage = (updatedPkg: ProcurementPackage) => {
     setPackages((prev) =>
       prev.map((p) => (p.id === updatedPkg.id ? updatedPkg : p))
@@ -344,6 +364,9 @@ export default function App() {
                 onDocumentUploaded={handleDocumentUploaded}
                 onReviewDocument={(doc) => openReviewForDocument(doc)}
                 preselectedPackageId={uploadPreselectedPackageId}
+                onDocumentsSynced={handleDocumentsSynced}
+                onDeleteDocument={handleDeleteDocument}
+                onOpenGoogleSettings={() => setIsGoogleModalOpen(true)}
               />
             )}
 
