@@ -12,6 +12,7 @@ import {
 } from './types/procurement';
 import { INITIAL_PACKAGES, INITIAL_DOCUMENTS } from './data/mockData';
 import { INITIAL_OPD_CONFIGS } from './data/opdNumberingData';
+import { sendWebhookPayload } from './utils/webhookService';
 import { Navbar } from './components/Navbar';
 import { Sidebar, MainNavTab } from './components/Sidebar';
 import { DashboardOverview } from './components/DashboardOverview';
@@ -23,9 +24,23 @@ import { ReviewWorkbenchView } from './components/ReviewWorkbenchView';
 import { OPDNumberingView } from './components/OPDNumberingView';
 import { PackageDetailModal } from './components/PackageDetailModal';
 import { CreatePackageModal } from './components/CreatePackageModal';
+import { GoogleIntegrationModal } from './components/GoogleIntegrationModal';
+import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 
 export default function App() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+
+  // Toast state
+  const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setToast({ text, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
+
   // Persistence via localStorage with fallbacks
   const [packages, setPackages] = useState<ProcurementPackage[]>(() => {
     try {
@@ -93,6 +108,11 @@ export default function App() {
     setPackages((prev) => [newPkg, ...prev]);
     setIsCreateModalOpen(false);
     setActiveTab('kelola-paket');
+
+    // Trigger Webhook Sync
+    sendWebhookPayload('PACKAGE_CREATED', newPkg).then((res) => {
+      showToast(res.message, res.success ? 'success' : 'error');
+    });
   };
 
   const handleAddOPD = (newOpd: OPDNumberingConfig) => {
@@ -117,14 +137,27 @@ export default function App() {
     );
   };
 
+  const openUploadForPackage = (pkgId: string) => {
+    setUploadPreselectedPackageId(pkgId);
+    setActiveTab('unggah-dokumen');
+  };
+
   const handleDocumentUploaded = (newDoc: DocumentItem) => {
     setDocuments((prev) => [newDoc, ...prev]);
+
+    // Trigger Webhook Sync (Photo vs Document)
+    const eventType = newDoc.category === 'DOKUMENTASI_FOTO' ? 'PHOTO_UPLOADED' : 'DOCUMENT_UPLOADED';
+    sendWebhookPayload(eventType, newDoc).then((res) => {
+      showToast(res.message, res.success ? 'success' : 'error');
+    });
   };
 
   const handleUpdatePackageStage = (updatedPkg: ProcurementPackage) => {
     setPackages((prev) =>
       prev.map((p) => (p.id === updatedPkg.id ? updatedPkg : p))
     );
+
+    sendWebhookPayload('STAGE_UPDATED', updatedPkg);
   };
 
   const handleUpdateDocumentReview = (docId: string, status: ReviewStatus, notes: string) => {
@@ -148,17 +181,29 @@ export default function App() {
     setPackages((prev) =>
       prev.map((pkg) => {
         if (pkg.id === pkgId) {
-          return {
+          const archived = {
             ...pkg,
             isArchived: true,
             archiveBoxNumber: boxNumber,
             archiveVerifiedBy: verifier,
             archiveDate: new Date().toISOString().slice(0, 10),
           };
+          sendWebhookPayload('PACKAGE_ARCHIVED', archived);
+          return archived;
         }
         return pkg;
       })
     );
+    showToast(`Paket berhasil diarsipkan di Kotak Arsip ${boxNumber}`, 'success');
+  };
+
+  // Reset ALL Data Function
+  const handleResetData = () => {
+    setPackages([]);
+    setDocuments([]);
+    localStorage.removeItem('sipelang_packages_v1');
+    localStorage.removeItem('sipelang_documents_v1');
+    showToast('Seluruh data dummy & lokal berhasil dihapus bersih (Reset 0 Data).', 'success');
   };
 
   const openReviewForDocument = (doc: DocumentItem) => {
@@ -169,11 +214,6 @@ export default function App() {
   const openStageTrackerForPackage = (pkg: ProcurementPackage) => {
     setStageTrackerPackageId(pkg.id);
     setActiveTab('tahapan-proses');
-  };
-
-  const openUploadForPackage = (pkgId: string) => {
-    setUploadPreselectedPackageId(pkgId);
-    setActiveTab('unggah-dokumen');
   };
 
   const openReviewForPackage = (pkg: ProcurementPackage) => {
@@ -192,7 +232,7 @@ export default function App() {
       case 'kelola-paket':
         return 'Kelola Paket Pengadaan';
       case 'unggah-dokumen':
-        return 'Unggah Dokumen Pengadaan';
+        return 'Unggah Dokumen & Data Visual';
       case 'tahapan-proses':
         return 'Tahapan Proses (Monitoring)';
       case 'pengarsipan':
@@ -205,12 +245,36 @@ export default function App() {
   };
 
   const pendingReviewCount = documents.filter((d) => d.reviewStatus === 'MENUNGGU_REVIEW').length;
-
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <div className="flex h-screen bg-stone-100/70 font-sans text-stone-900 overflow-hidden">
-      {/* Sidebar Navigation (Collapsible Vertical Bar) */}
+      
+      {/* TOAST NOTIFICATION */}
+      {toast && (
+        <div
+          className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-semibold transition-all ${
+            toast.type === 'success'
+              ? 'bg-emerald-900 text-emerald-100 border-emerald-700'
+              : 'bg-rose-900 text-rose-100 border-rose-700'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          ) : (
+            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+          )}
+          <span>{toast.text}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="ml-2 text-white/70 hover:text-white cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab)}
@@ -227,6 +291,7 @@ export default function App() {
           currentMenuTitle={getTabTitle()}
           onQuickCreate={() => setIsCreateModalOpen(true)}
           pendingReviewCount={pendingReviewCount}
+          onOpenGoogleSettings={() => setIsGoogleModalOpen(true)}
         />
 
         {/* Viewport Content */}
@@ -304,25 +369,44 @@ export default function App() {
         </main>
       </div>
 
-      {/* Detail Modal */}
+      {/* PACKAGE DETAIL MODAL */}
       {selectedPackageForDetail && (
         <PackageDetailModal
           pkg={selectedPackageForDetail}
-          documents={documents}
+          documents={documents.filter((d) => d.packageId === selectedPackageForDetail.id)}
           onClose={() => setSelectedPackageForDetail(null)}
-          onOpenStageTracker={(pkg) => openStageTrackerForPackage(pkg)}
-          onOpenUpload={(pkgId) => openUploadForPackage(pkgId)}
-          onReviewDoc={(doc) => openReviewForDocument(doc)}
+          onOpenStageTracker={(pkg) => {
+            setSelectedPackageForDetail(null);
+            openStageTrackerForPackage(pkg);
+          }}
+          onOpenUpload={(pkgId) => {
+            setSelectedPackageForDetail(null);
+            openUploadForPackage(pkgId);
+          }}
+          onReviewDoc={(doc) => {
+            setSelectedPackageForDetail(null);
+            openReviewForDocument(doc);
+          }}
         />
       )}
 
-      {/* Create Package Modal (Mode Modal Sesuai Request) */}
-      <CreatePackageModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onPackageCreated={handlePackageCreated}
-        opdList={opdList}
-        onIncrementOPDCounter={handleIncrementOPDCounter}
+      {/* CREATE PACKAGE MODAL */}
+      {isCreateModalOpen && (
+        <CreatePackageModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onPackageCreated={handlePackageCreated}
+          opdList={opdList}
+          onIncrementOPDCounter={handleIncrementOPDCounter}
+        />
+      )}
+
+      {/* GOOGLE INTEGRATION & WEBHOOK SETTINGS MODAL */}
+      <GoogleIntegrationModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        onResetData={handleResetData}
+        onShowToast={showToast}
       />
     </div>
   );
