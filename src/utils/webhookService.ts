@@ -44,47 +44,70 @@ export function saveIntegrationSettings(settings: GoogleIntegrationSettings): vo
   }
 }
 
+export async function uploadFileToDrive(
+  file: File,
+  folderType: 'DOCS' | 'PHOTOS'
+): Promise<string> {
+  const settings = getStoredIntegrationSettings();
+  const folderUrl = folderType === 'DOCS' ? settings.driveDocsFolderUrl : settings.drivePhotosFolderUrl;
+  
+  const reader = new FileReader();
+  const base64Promise = new Promise<string>((resolve) => {
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(file);
+  });
+  const base64 = await base64Promise;
+
+  const payload = {
+    action: 'UPLOAD_FILE',
+    folderUrl,
+    fileName: file.name,
+    fileType: file.type,
+    fileData: base64,
+  };
+
+  const response = await fetch(settings.webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+  });
+
+  const result = await response.json();
+  return result.fileUrl; // Expecting Google Apps Script to return the drive file URL
+}
+
 export async function sendWebhookPayload(
   eventType: 'PACKAGE_CREATED' | 'DOCUMENT_UPLOADED' | 'PHOTO_UPLOADED' | 'PACKAGE_ARCHIVED' | 'STAGE_UPDATED',
-  data: any
+  data: Record<string, any> // Expecting a flat object
 ): Promise<{ success: boolean; message: string }> {
   const settings = getStoredIntegrationSettings();
 
   if (!settings.webhookUrl) {
     return {
       success: false,
-      message: 'URL Webhook Google Sheet belum dikonfigurasi. Data disimpan di sistem lokal.',
+      message: 'URL Webhook Google Sheet belum dikonfigurasi.',
     };
   }
 
   const payload = {
     eventType,
     timestamp: new Date().toISOString(),
-    sheetTargetUrl: settings.sheetUrl,
-    driveDocsFolderUrl: settings.driveDocsFolderUrl,
-    drivePhotosFolderUrl: settings.drivePhotosFolderUrl,
-    data,
+    ...data, // Assume data is already flattened
   };
 
   try {
-    // Mode no-cors for Google Apps Script Webhooks or standard CORS
-    const response = await fetch(settings.webhookUrl, {
+    await fetch(settings.webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8', // Preferred for Google Apps Script doPost
-      },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
 
     return {
       success: true,
-      message: `Data ${eventType} berhasil terkirim ke Webhook Google Sheets & Drive!`,
+      message: `Data ${eventType} berhasil terkirim!`,
     };
   } catch (error) {
-    console.warn('Webhook transmission error (likely no-cors or offline):', error);
-    return {
-      success: true,
-      message: `Data ${eventType} telah diproses dan dikirim ke Webhook Google Sheet.`,
-    };
+    console.error('Webhook error:', error);
+    return { success: false, message: 'Gagal mengirim data.' };
   }
 }
