@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { ProcurementPackage, ProcurementType, FundingSource, OPDNumberingConfig } from '../types/procurement';
-import { getDefaultStageChecklists } from '../data/procurementStages';
+import { getDefaultStageChecklists, getDefaultDocumentChecklist } from '../data/procurementStages';
 import { formatRupiah } from '../utils/formatters';
 import {
   generateNagekeoPackageNumber,
@@ -159,6 +159,7 @@ export const CreatePackageModal: React.FC<CreatePackageModalProps> = ({
           checklists: getDefaultStageChecklists('SPK_SELESAI'),
         },
       },
+      documentChecklist: getDefaultDocumentChecklist(),
     };
 
     if (activeOpd && onIncrementOPDCounter) {

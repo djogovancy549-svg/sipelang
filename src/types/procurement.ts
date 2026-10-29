@@ -72,6 +72,16 @@ export interface PackageStageState {
   checklists: StageChecklistItem[];
 }
 
+export interface DocumentChecklistItem {
+  id: string;
+  title: string;
+  isDone: boolean;
+  documentNumber?: string;
+  date?: string;
+  notes?: string;
+  verifiedBy?: string;
+}
+
 export interface ProcurementPackage {
   id: string;
   codeRUP: string;
@@ -101,6 +111,7 @@ export interface ProcurementPackage {
   archiveDate?: string;
   archiveVerifiedBy?: string;
   stages: Record<StageKey, PackageStageState>;
+  documentChecklist?: DocumentChecklistItem[];
   notes?: string;
 }
 

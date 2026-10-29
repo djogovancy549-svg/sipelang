@@ -98,3 +98,78 @@ export const getDefaultStageChecklists = (stageKey: StageKey): StageChecklistIte
       ];
   }
 };
+
+export const getDefaultDocumentChecklist = () => [
+  {
+    id: 'doc-chk-1',
+    title: 'Dokumen Persiapan Pengadaan (Surat pengantar, HPS, Rancangan Kontrak)',
+    isDone: true,
+    documentNumber: '027/01/DPP/PUPR/2026',
+    date: new Date().toISOString().slice(0, 10),
+    verifiedBy: 'Pejabat Pembuat Komitmen (PPK)',
+    notes: 'Telah diserahkan oleh PPK lengkap dengan Spesifikasi Teknis/KAK',
+  },
+  {
+    id: 'doc-chk-2',
+    title: 'Surat Undangan Pengadaan Langsung',
+    isDone: false,
+    documentNumber: '',
+    date: '',
+    verifiedBy: 'Pejabat Pengadaan',
+    notes: 'Surat undangan resmi disampaikan kepada calon rekanan terundang',
+  },
+  {
+    id: 'doc-chk-3',
+    title: 'Surat permintaan penawaran harga',
+    isDone: false,
+    documentNumber: '',
+    date: '',
+    verifiedBy: 'Pejabat Pengadaan',
+    notes: 'Permintaan dokumen penawaran teknis dan rincian penawaran harga',
+  },
+  {
+    id: 'doc-chk-4',
+    title: 'BA Pembukaan Penawaran',
+    isDone: false,
+    documentNumber: '',
+    date: '',
+    verifiedBy: 'Pejabat Pengadaan',
+    notes: 'Pemeriksaan keutuhan dan kelengkapan sampul penawaran',
+  },
+  {
+    id: 'doc-chk-5',
+    title: 'BA Evaluasi Administrasi, Teknis, Harga, Kualifikasi dan lampirannya',
+    isDone: false,
+    documentNumber: '',
+    date: '',
+    verifiedBy: 'Pejabat Pengadaan',
+    notes: 'Evaluasi keabsahan administrasi, KSWP pajak, spesifikasi teknis, & kualifikasi',
+  },
+  {
+    id: 'doc-chk-6',
+    title: 'BA Negosiasi Harga',
+    isDone: false,
+    documentNumber: '',
+    date: '',
+    verifiedBy: 'Pejabat Pengadaan',
+    notes: 'Klarifikasi teknis dan negosiasi biaya satuan / total penawaran',
+  },
+  {
+    id: 'doc-chk-7',
+    title: 'BA Hasil Pengadaan Langsung',
+    isDone: false,
+    documentNumber: '',
+    date: '',
+    verifiedBy: 'Pejabat Pengadaan',
+    notes: 'Penetapan calon penyedia dan penyampaian hasil pengadaan ke PPK',
+  },
+  {
+    id: 'doc-chk-8',
+    title: 'Laporan Hasil Pengadaan Langsung',
+    isDone: false,
+    documentNumber: '',
+    date: '',
+    verifiedBy: 'Pejabat Pengadaan',
+    notes: 'Laporan pertanggungjawaban lengkap hasil pengadaan langsung',
+  },
+];
