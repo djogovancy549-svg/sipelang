@@ -445,16 +445,17 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto shrink-0 flex-wrap">
-            {/* Direct Web Upload Link Button */}
+            {/* Single Unified Upload Button pointing to the Apps Script Link */}
             <a
               href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto px-4 py-2.5 bg-amber-700 hover:bg-amber-800 text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-amber-700/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-              title="Buka Web Upload Apps Script Langsung"
+              className="w-full sm:w-auto px-5 py-2.5 bg-[#701524] hover:bg-[#58101c] text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-[#701524]/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 group"
+              title="Buka Formulir Web Upload Dokumen & Foto Apps Script"
             >
-              <Globe className="w-4 h-4 text-amber-200" />
-              <span>BUKA WEB UPLOAD APPS SCRIPT</span>
+              <UploadCloud className="w-4 h-4 text-rose-200 group-hover:scale-110 transition-transform" />
+              <span>UNGGAH DOKUMEN DAN FOTO</span>
+              <ExternalLink className="w-3.5 h-3.5 text-rose-200" />
             </a>
 
             {/* Sync from Google Drive Button */}
@@ -467,24 +468,6 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
               <RefreshCw className={`w-4 h-4 text-emerald-200 ${isSyncing ? 'animate-spin' : ''}`} />
               <span>{isSyncing ? 'MEMBACA DARI DRIVE...' : 'TARIK DATA DARI DRIVE'}</span>
             </button>
-
-            {activeSubTab === 'DOCUMENTS' ? (
-              <button
-                onClick={() => setIsDocModalOpen(true)}
-                className="w-full sm:w-auto px-4 py-2.5 bg-[#701524] hover:bg-[#58101c] text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-[#701524]/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 group"
-              >
-                <Plus className="w-4 h-4 text-rose-200 group-hover:rotate-90 transition-transform" />
-                <span>UNGGAH DOKUMEN</span>
-              </button>
-            ) : activeSubTab === 'VISUAL_DATA' ? (
-              <button
-                onClick={() => setIsPhotoModalOpen(true)}
-                className="w-full sm:w-auto px-4 py-2.5 bg-indigo-900 hover:bg-indigo-950 text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-indigo-900/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 group"
-              >
-                <Camera className="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform" />
-                <span>UNGGAH FOTO KEGIATAN</span>
-              </button>
-            ) : null}
 
             <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl flex items-center gap-3 w-full sm:w-auto justify-around text-xs">
               <div className="text-center px-1.5">
@@ -772,13 +755,16 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsPhotoModalOpen(true)}
+              <a
+                href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-4 py-2 bg-indigo-900 hover:bg-indigo-950 text-white text-xs font-extrabold rounded-xl transition-all flex items-center gap-2 shadow-sm cursor-pointer"
               >
-                <Plus className="w-4 h-4 text-indigo-200" />
-                <span>+ UNGGAH FOTO BARU</span>
-              </button>
+                <UploadCloud className="w-4 h-4 text-indigo-200" />
+                <span>UNGGAH DOKUMEN DAN FOTO</span>
+                <ExternalLink className="w-3.5 h-3.5 text-indigo-200" />
+              </a>
             </div>
           </div>
 
