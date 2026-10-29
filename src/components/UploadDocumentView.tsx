@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { uploadFileToDrive } from '../utils/webhookService';
 import {
   ProcurementPackage,
   DocumentItem,
@@ -67,6 +68,9 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
   );
   const [docTitle, setDocTitle] = useState('');
   const [docCategory, setDocCategory] = useState<DocumentCategory>('PERSIAPAN');
+  
+  // Form State for Standard Documents
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState('');
   const [selectedFileSize, setSelectedFileSize] = useState('');
   const [docNotes, setDocNotes] = useState('');
@@ -105,11 +109,12 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
 
   const currentDocPackage = packages.find((p) => p.id === selectedPackageId) || packages[0];
   const currentPhotoPackage = packages.find((p) => p.id === photoPackageId) || packages[0];
-
+  
   // Handler for standard document file input
   const handleDocFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      setSelectedFile(file);
       setSelectedFileName(file.name);
       setSelectedFileSize(`${(file.size / (1024 * 1024)).toFixed(1)} MB`);
       if (!docTitle) {
@@ -160,7 +165,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
   };
 
   // Standard Document Submit Handler
-  const handleDocSubmit = (e: React.FormEvent) => {
+  const handleDocSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPackageId) {
       showToast('Mohon pilih paket pengadaan terlebih dahulu.', 'error');
@@ -170,36 +175,43 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
       showToast('Mohon isi judul dokumen pengadaan.', 'error');
       return;
     }
-    if (!selectedFileName) {
+    if (!selectedFile) {
       showToast('Mohon pilih file berkas dokumen.', 'error');
       return;
     }
 
-    const fileExtension = selectedFileName ? selectedFileName.split('.').pop()?.toLowerCase() || 'pdf' : 'pdf';
-    const docName = selectedFileName || `${docTitle.replace(/\s+/g, '_')}.${fileExtension}`;
-    const docSize = selectedFileSize || '2.4 MB';
+    try {
+      const fileUrl = await uploadFileToDrive(selectedFile, 'DOCS');
+      
+      const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase() || 'pdf';
+      
+      const newDoc: DocumentItem = {
+        id: `doc-${Date.now()}`,
+        packageId: selectedPackageId,
+        title: docTitle.trim(),
+        category: docCategory,
+        fileName: selectedFile.name,
+        fileSize: selectedFileSize,
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: uploaderRole,
+        reviewStatus: 'MENUNGGU_REVIEW',
+        notes: docNotes.trim() || 'Dokumen diunggah untuk ditelaah kelayakan oleh Pejabat Pengadaan.',
+        fileType: fileExtension.includes('doc') ? 'doc' : fileExtension.includes('xls') ? 'xls' : 'pdf',
+        fileUrl: fileUrl, // Include the fileUrl
+      };
 
-    const newDoc: DocumentItem = {
-      id: `doc-${Date.now()}`,
-      packageId: selectedPackageId,
-      title: docTitle.trim(),
-      category: docCategory,
-      fileName: docName,
-      fileSize: docSize,
-      uploadDate: new Date().toISOString().slice(0, 10),
-      uploadedBy: uploaderRole,
-      reviewStatus: 'MENUNGGU_REVIEW',
-      notes: docNotes.trim() || 'Dokumen diunggah untuk ditelaah kelayakan oleh Pejabat Pengadaan.',
-      fileType: fileExtension.includes('doc') ? 'doc' : fileExtension.includes('xls') ? 'xls' : 'pdf',
-    };
-
-    onDocumentUploaded(newDoc);
-    setDocTitle('');
-    setSelectedFileName('');
-    setSelectedFileSize('');
-    setDocNotes('');
-    setIsDocModalOpen(false);
-    showToast(`Berhasil mengunggah dokumen: "${newDoc.title}"`, 'success');
+      onDocumentUploaded(newDoc);
+      setDocTitle('');
+      setSelectedFile(null);
+      setSelectedFileName('');
+      setSelectedFileSize('');
+      setDocNotes('');
+      setIsDocModalOpen(false);
+      showToast(`Berhasil mengunggah dokumen: "${newDoc.title}"`, 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Gagal mengunggah file ke Drive.', 'error');
+    }
   };
 
   // Visual Photo Submit Handler
