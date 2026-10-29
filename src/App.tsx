@@ -124,10 +124,12 @@ export default function App() {
 
   const handleAddOPD = (newOpd: OPDNumberingConfig) => {
     setOpdList((prev) => [...prev, newOpd]);
+    sendWebhookPayload('OPD_NUMBERING_UPDATED', { ...newOpd, action: 'ADD' });
   };
 
   const handleUpdateOPD = (updatedOpd: OPDNumberingConfig) => {
     setOpdList((prev) => prev.map((o) => (o.id === updatedOpd.id ? updatedOpd : o)));
+    sendWebhookPayload('OPD_NUMBERING_UPDATED', { ...updatedOpd, action: 'UPDATE' });
   };
 
   const handleDeleteOPD = (opdId: string) => {
@@ -171,13 +173,23 @@ export default function App() {
     setDocuments((prev) =>
       prev.map((doc) => {
         if (doc.id === docId) {
-          return {
+          const updatedDoc = {
             ...doc,
             reviewStatus: status,
             notes,
             reviewDate: new Date().toISOString().slice(0, 10),
             reviewerName: 'Bambang Pratama, S.Kom. (PP)',
           };
+
+          sendWebhookPayload('MATRIX_UPDATED', {
+            docId: updatedDoc.id,
+            question: updatedDoc.title,
+            evaluationStatus: status,
+            evidenceNotes: notes,
+            packageId: updatedDoc.packageId
+          });
+
+          return updatedDoc;
         }
         return doc;
       })
