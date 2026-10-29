@@ -445,6 +445,18 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto shrink-0 flex-wrap">
+            {/* Direct Web Upload Link Button */}
+            <a
+              href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-4 py-2.5 bg-amber-700 hover:bg-amber-800 text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-amber-700/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              title="Buka Web Upload Apps Script Langsung"
+            >
+              <Globe className="w-4 h-4 text-amber-200" />
+              <span>BUKA WEB UPLOAD APPS SCRIPT</span>
+            </a>
+
             {/* Sync from Google Drive Button */}
             <button
               onClick={handleSyncFromDrive}
@@ -898,6 +910,16 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              <a
+                href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 shadow-xs cursor-pointer"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Buka Web Upload</span>
+              </a>
+
               <button
                 onClick={handleSyncFromDrive}
                 disabled={isSyncing}
