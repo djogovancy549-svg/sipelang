@@ -14,7 +14,8 @@ export type DocumentCategory =
   | 'PENAWARAN' 
   | 'EVALUASI_NEGOSIASI' 
   | 'KONTRAK_HASIL' 
-  | 'SERAH_TERIMA';
+  | 'SERAH_TERIMA'
+  | 'DOKUMENTASI_FOTO';
 
 export type StageKey = 
   | 'PERSIAPAN_PPK'
@@ -46,7 +47,8 @@ export interface DocumentItem {
   notes?: string;
   reviewerName?: string;
   reviewDate?: string;
-  fileType: 'pdf' | 'doc' | 'xls' | 'zip';
+  fileType: 'pdf' | 'doc' | 'xls' | 'zip' | 'jpg' | 'png';
+  images?: string[]; // For documentation with multiple photos
 }
 
 export interface StageChecklistItem {
