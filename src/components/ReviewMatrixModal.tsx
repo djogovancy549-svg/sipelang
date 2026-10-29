@@ -20,6 +20,7 @@ import {
 } from '../data/reviewMatrixTemplates';
 import { MarqueeTicker } from './MarqueeTicker';
 import { SecurityPinModal } from './SecurityPinModal';
+import { ReviewPrintModal } from './ReviewPrintModal';
 import {
   X,
   ShieldCheck,
@@ -33,6 +34,7 @@ import {
   Check,
   FolderPlus,
   Tag,
+  Printer,
 } from 'lucide-react';
 
 interface ReviewMatrixModalProps {
@@ -112,6 +114,9 @@ export const ReviewMatrixModal: React.FC<ReviewMatrixModalProps> = ({
   // Undo Notification state
   const [deletedHistory, setDeletedHistory] = useState<{ item: ReviewMatrixItem; index: number } | null>(null);
   const [showNotification, setShowNotification] = useState<string | null>(null);
+
+  // Print modal state
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -404,6 +409,16 @@ export const ReviewMatrixModal: React.FC<ReviewMatrixModalProps> = ({
             <span className="px-2.5 py-1 bg-white border border-stone-200 rounded-lg font-bold text-stone-700 shadow-2xs">
               {totalCount} Kriteria • <span className="text-emerald-700">{fulfillmentRate}% Sesuai</span>
             </span>
+
+            <button
+              type="button"
+              onClick={() => setIsPrintModalOpen(true)}
+              className="px-3 py-1 bg-amber-800 hover:bg-amber-900 text-white font-semibold rounded-lg flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+              title="Cetak Berita Acara Reviu PDF"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Cetak BA Reviu</span>
+            </button>
 
             <button
               type="button"
@@ -904,6 +919,16 @@ export const ReviewMatrixModal: React.FC<ReviewMatrixModalProps> = ({
         </div>
 
       </div>
+
+      {/* Official Berita Acara Reviu Printable Document Modal */}
+      <ReviewPrintModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        documentItem={document}
+        procurementPackage={procurementPackage}
+        matrixItems={items}
+        reviewerName={reviewerName}
+      />
     </div>
   );
 };
