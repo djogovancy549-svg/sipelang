@@ -9,6 +9,6 @@
        "not_found_handling": "single-page-application"
      },
      "vars": {
-       "AUTH_GAS_URL": "https://script.google.com/macros/s/AKfycbwqJT_uFOSrlmsNzMpyn-jljXB6J4Aqn9vk6vmD6yoyi5ZtAqqdpVZGEtVE0lD8CqFs/exec"
+       "AUTH_GAS_URL": "https://script.google.com/macros/s/AKfycbxNbNDsjYKW9L8iK5kUz9Ec-XCdKYLRFJbkGvszJDPh5V1GvdmGriVsuZ1XKqqWF4cz/exec"
      }
    }
