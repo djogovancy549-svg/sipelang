@@ -60,7 +60,8 @@ import {
   FileCheck2,
   Sliders,
   UserCheck,
-  Camera
+  Camera,
+  ChevronDown
 } from 'lucide-react';
 
 interface StageProcessViewProps {
@@ -366,6 +367,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<
     'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'NEGOSIASI_HARGA' | 'DAFTAR_HADIR' | 'DOKUMENTASI_FOTO' | 'STAGE_WORKFLOW'
   >(initialSubTab || 'CHECKLIST_TABLE');
+  const [isSubTabDropdownOpen, setIsSubTabDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (initialSubTab) {
@@ -778,106 +780,87 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs between "Ceklist Kelengkapan Dokumen", "Penjadwalan & Buat Surat Undangan", and "6 Tahapan Proses" */}
-        <div className="flex items-center gap-2 pt-2 border-t border-stone-100 overflow-x-auto pb-1 custom-scrollbar">
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('CHECKLIST_TABLE')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
-              activeSubTab === 'CHECKLIST_TABLE'
-                ? 'bg-[#701524] text-white border-[#701524] shadow-md scale-[1.02]'
-                : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400 hover:bg-stone-50'
-            }`}
-          >
-            <ListChecks className="w-4 h-4" />
-            <span>Tabel Ceklist Dokumen</span>
-            <span
-              className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                activeSubTab === 'CHECKLIST_TABLE' ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-500'
-              }`}
-            >
-              {completedChecklistCount}/{localChecklist.length}
-            </span>
-          </button>
+        {/* Navigation Dropdown List with Icons for each item */}
+        {(() => {
+          const subTabOptions = [
+            { id: 'CHECKLIST_TABLE', label: 'Tabel Ceklist Dokumen', icon: ListChecks, badge: `${completedChecklistCount}/${localChecklist.length}` },
+            { id: 'JADWAL_UNDANGAN', label: 'Jadwal & Undangan', icon: Calendar },
+            { id: 'EVALUASI_PENAWARAN', label: 'Evaluasi Penawaran', icon: FileCheck2 },
+            { id: 'NEGOSIASI_HARGA', label: 'Negosiasi Harga', icon: Sliders },
+            { id: 'DAFTAR_HADIR', label: 'Daftar Hadir', icon: UserCheck },
+            { id: 'DOKUMENTASI_FOTO', label: 'Dokumentasi Foto', icon: Camera },
+            { id: 'STAGE_WORKFLOW', label: 'Monitoring 6 Tahap', icon: SlidersHorizontal },
+          ];
+          const currentActiveObj = subTabOptions.find((o) => o.id === activeSubTab) || subTabOptions[0];
+          const ActiveIcon = currentActiveObj.icon;
 
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('JADWAL_UNDANGAN')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
-              activeSubTab === 'JADWAL_UNDANGAN'
-                ? 'bg-amber-600 text-white border-amber-600 shadow-md scale-[1.02]'
-                : 'bg-white text-stone-600 border-stone-200 hover:border-amber-400 hover:bg-amber-50'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Jadwal & Undangan</span>
-          </button>
+          return (
+            <div className="relative pt-2 border-t border-stone-100">
+              <button
+                type="button"
+                onClick={() => setIsSubTabDropdownOpen(!isSubTabDropdownOpen)}
+                className="w-full sm:w-auto min-w-[320px] px-4 py-3 bg-stone-50 hover:bg-stone-100 border-2 border-stone-300 rounded-xl text-xs font-bold text-stone-800 flex items-center justify-between gap-3 shadow-xs cursor-pointer transition-all"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-lg bg-white shadow-xs border border-stone-200 text-[#701524] shrink-0">
+                    <ActiveIcon className="w-4 h-4" />
+                  </div>
+                  <div className="text-left min-w-0 truncate">
+                    <div className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Menu / Tahapan Aktif</div>
+                    <div className="text-xs font-black text-stone-900 flex items-center gap-2 truncate">
+                      <span className="truncate">{currentActiveObj.label}</span>
+                      {currentActiveObj.badge && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-mono font-bold shrink-0">
+                          {currentActiveObj.badge}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-stone-500 transition-transform shrink-0 ${isSubTabDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('EVALUASI_PENAWARAN')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
-              activeSubTab === 'EVALUASI_PENAWARAN'
-                ? 'bg-rose-700 text-white border-rose-700 shadow-md scale-[1.02]'
-                : 'bg-white text-stone-600 border-stone-200 hover:border-rose-400 hover:bg-rose-50'
-            }`}
-          >
-            <FileCheck2 className="w-4 h-4" />
-            <span>Evaluasi Penawaran</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('NEGOSIASI_HARGA')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
-              activeSubTab === 'NEGOSIASI_HARGA'
-                ? 'bg-emerald-700 text-white border-emerald-700 shadow-md scale-[1.02]'
-                : 'bg-white text-stone-600 border-stone-200 hover:border-emerald-400 hover:bg-emerald-50'
-            }`}
-          >
-            <Sliders className="w-4 h-4" />
-            <span>Negosiasi Harga</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('DAFTAR_HADIR')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
-              activeSubTab === 'DAFTAR_HADIR'
-                ? 'bg-blue-700 text-white border-blue-700 shadow-md scale-[1.02]'
-                : 'bg-white text-stone-600 border-stone-200 hover:border-blue-400 hover:bg-blue-50'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" />
-            <span>Daftar Hadir</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('DOKUMENTASI_FOTO')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
-              activeSubTab === 'DOKUMENTASI_FOTO'
-                ? 'bg-rose-600 text-white border-rose-600 shadow-md scale-[1.02]'
-                : 'bg-white text-stone-600 border-stone-200 hover:border-rose-400 hover:bg-rose-50'
-            }`}
-          >
-            <Camera className="w-4 h-4" />
-            <span>Dokumentasi Foto</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('STAGE_WORKFLOW')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
-              activeSubTab === 'STAGE_WORKFLOW'
-                ? 'bg-stone-800 text-white border-stone-800 shadow-md scale-[1.02]'
-                : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400 hover:bg-stone-50'
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>Monitoring 6 Tahap</span>
-          </button>
-        </div>
+              {isSubTabDropdownOpen && (
+                <div className="absolute left-0 mt-2 w-full sm:w-80 bg-white border border-stone-200 rounded-2xl shadow-xl z-50 p-2 space-y-1 animate-fade-in">
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100">
+                    Pilih Menu / Tahapan Proses
+                  </div>
+                  {subTabOptions.map((opt) => {
+                    const IconComp = opt.icon;
+                    const isSelected = activeSubTab === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveSubTab(opt.id as any);
+                          setIsSubTabDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#701524] text-white shadow-sm'
+                            : 'text-stone-700 hover:bg-stone-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-600'}`}>
+                            <IconComp className="w-4 h-4" />
+                          </div>
+                          <span className="truncate">{opt.label}</span>
+                        </div>
+                        {opt.badge && (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 ${isSelected ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'}`}>
+                            {opt.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Package Profile Summary */}
