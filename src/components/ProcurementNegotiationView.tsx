@@ -112,12 +112,42 @@ export const ProcurementNegotiationView: React.FC<ProcurementNegotiationViewProp
   const logoInputRef = useRef<HTMLInputElement>(null);
   const sigInputRef = useRef<HTMLInputElement>(null);
 
+  const [uploadPinModalType, setUploadPinModalType] = useState<'LOGO' | 'SIGNATURE' | null>(null);
+  const [uploadPinInput, setUploadPinInput] = useState('');
+  const [uploadPinError, setUploadPinError] = useState(false);
+
   const getDailyPin = () => {
     const now = new Date();
     const d = String(now.getDate()).padStart(2, '0');
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const y = String(now.getFullYear()).slice(-2);
     return `${d}${m}${y}-pbj`;
+  };
+
+  const getLogoSignPin = () => {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = String(now.getFullYear()).slice(-2);
+    return `${d}${m}${y}-lttd`;
+  };
+
+  const handleVerifyUploadPin = () => {
+    const correctPin = getLogoSignPin();
+    if (uploadPinInput.trim() === correctPin) {
+      const type = uploadPinModalType;
+      setUploadPinModalType(null);
+      setUploadPinInput('');
+      setUploadPinError(false);
+      if (type === 'LOGO') {
+        logoInputRef.current?.click();
+      } else if (type === 'SIGNATURE') {
+        sigInputRef.current?.click();
+      }
+    } else {
+      setUploadPinError(true);
+      if (onShowToast) onShowToast('PIN Upload Logo & Tanda Tangan Salah!', 'error');
+    }
   };
 
   const handleVerifyPin = () => {
@@ -293,6 +323,39 @@ export const ProcurementNegotiationView: React.FC<ProcurementNegotiationViewProp
                   <input type="text" value={ppNip} onChange={e => setPpNip(e.target.value)} placeholder="NIP Pejabat" className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none" />
                   <input type="text" value={ppJabatan} onChange={e => setPpJabatan(e.target.value)} placeholder="Jabatan Pejabat" className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none" />
                   <textarea rows={2} value={ppAlamat} onChange={e => setPpAlamat(e.target.value)} placeholder="Alamat Pejabat Pengadaan" className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none" />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-stone-100 space-y-2">
+                <h3 className="text-[10px] font-black uppercase text-amber-800 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Logo & Tanda Tangan (PIN: DDMMYY-lttd)</span>
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadPinModalType('LOGO');
+                      setUploadPinInput('');
+                      setUploadPinError(false);
+                    }}
+                    className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Logo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadPinModalType('SIGNATURE');
+                      setUploadPinInput('');
+                      setUploadPinError(false);
+                    }}
+                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload TTD</span>
+                  </button>
                 </div>
               </div>
 
@@ -574,10 +637,13 @@ export const ProcurementNegotiationView: React.FC<ProcurementNegotiationViewProp
                   <p className="font-medium text-stone-600 mt-1">{ppJabatan}</p>
                 </div>
                 <div className="relative flex flex-col items-center">
-                  {/* Template Signature Rendering here */}
-                  <div className="w-32 h-16 border border-dashed border-stone-300 rounded-full flex items-center justify-center opacity-30 scale-125">
-                    <span className="text-[7px] font-mono text-stone-400">OPTIMA TEMPLATE SIGN</span>
-                  </div>
+                  {customSignature && signatureMode === 'UPLOADED' ? (
+                    <img src={customSignature} alt="Tanda Tangan" className="w-32 h-16 object-contain" />
+                  ) : (
+                    <div className="w-32 h-16 border border-dashed border-stone-300 rounded-full flex items-center justify-center opacity-30 scale-125">
+                      <span className="text-[7px] font-mono text-stone-400">OPTIMA TEMPLATE SIGN</span>
+                    </div>
+                  )}
                   <div className="mt-4">
                     <p className="font-bold underline uppercase text-stone-950">{ppNama}</p>
                     <p className="font-mono text-[10px] mt-0.5">NIP. {ppNip}</p>
@@ -667,6 +733,114 @@ export const ProcurementNegotiationView: React.FC<ProcurementNegotiationViewProp
           </div>
         </div>
       )}
+      {/* Hidden file inputs for logo and signature */}
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const res = ev.target?.result as string;
+            setCustomLogo(res);
+            try {
+              localStorage.setItem('sipelang_official_logo', res);
+              if (onShowToast) onShowToast('Logo resmi berhasil diunggah.', 'success');
+            } catch {}
+          };
+          reader.readAsDataURL(file);
+          e.target.value = '';
+        }}
+        className="hidden"
+      />
+      <input
+        ref={sigInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const res = ev.target?.result as string;
+            setCustomSignature(res);
+            setSignatureMode('UPLOADED');
+            try {
+              localStorage.setItem('sipelang_official_signature', res);
+              if (onShowToast) onShowToast('Tanda tangan berhasil diunggah.', 'success');
+            } catch {}
+          };
+          reader.readAsDataURL(file);
+          e.target.value = '';
+        }}
+        className="hidden"
+      />
+
+      {/* Upload PIN Verification Modal */}
+      {uploadPinModalType && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-amber-200 animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-200">
+                <KeyRound className="w-8 h-8 text-amber-700" />
+              </div>
+              <h3 className="text-sm font-black text-stone-900 uppercase tracking-tight">
+                PIN Upload {uploadPinModalType === 'LOGO' ? 'Logo Resmi' : 'Tanda Tangan'}
+              </h3>
+              <p className="text-xs text-stone-500 mt-1.5 leading-relaxed">
+                Dilindungi PIN keamanan harian khusus Logo & Tanda Tangan (<strong className="text-stone-800">DDMMYY-lttd</strong>).
+              </p>
+              <div className="mt-2 p-2 bg-amber-50 rounded-lg text-[10px] font-mono text-amber-900 font-bold border border-amber-200">
+                PIN Hari Ini: {getLogoSignPin()}
+              </div>
+
+              <div className="mt-5 space-y-3">
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                  <input
+                    type="password"
+                    value={uploadPinInput}
+                    onChange={(e) => {
+                      setUploadPinInput(e.target.value);
+                      setUploadPinError(false);
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleVerifyUploadPin()}
+                    autoFocus
+                    placeholder={`Contoh: ${getLogoSignPin()}`}
+                    className={`w-full pl-10 pr-4 py-3 bg-stone-50 border ${uploadPinError ? 'border-rose-500 ring-2 ring-rose-200' : 'border-stone-300'} rounded-xl text-center font-mono font-bold text-xs focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                  />
+                </div>
+                {uploadPinError && (
+                  <p className="text-[10px] font-bold text-rose-600 flex items-center justify-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    <span>PIN Salah! Format: DDMMYY-lttd</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex border-t border-stone-100 bg-stone-50">
+              <button
+                type="button"
+                onClick={() => setUploadPinModalType(null)}
+                className="flex-1 px-4 py-3.5 text-xs font-bold text-stone-500 hover:bg-stone-100 transition-colors uppercase"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleVerifyUploadPin}
+                className="flex-1 px-4 py-3.5 text-xs font-extrabold text-white bg-amber-600 hover:bg-amber-700 transition-colors uppercase"
+              >
+                Verifikasi & Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Security PIN Confirmation Modal */}
       <SecurityPinModal
         isOpen={!!deleteTarget}
