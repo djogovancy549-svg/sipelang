@@ -48,6 +48,9 @@ import {
   UploadCloud,
   Trash2,
   Plus,
+  Lock,
+  KeyRound,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface StageProcessViewProps {
@@ -363,6 +366,12 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
   const [newDocTitle, setNewDocTitle] = useState('');
   const [newVerifiedBy, setNewVerifiedBy] = useState('Pejabat Pengadaan');
 
+  // PIN security for checklist item deletion (Required: 301026-pbj)
+  const REQUIRED_DELETE_PIN = '301026-pbj';
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [enteredDeletePin, setEnteredDeletePin] = useState('');
+  const [deletePinError, setDeletePinError] = useState('');
+
   // Selected document for direct inside-modal review
   const [modalReviewDoc, setModalReviewDoc] = useState<DocumentItem | null>(null);
 
@@ -416,17 +425,34 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
     setIsAddModalOpen(false);
   };
 
-  // Delete checklist item
-  const handleDeleteChecklistItem = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus item ceklist dokumen ini?')) {
-      const updatedList = localChecklist.filter((item) => item.id !== id);
-      setLocalChecklist(updatedList);
+  // Request deletion (opens PIN prompt)
+  const handleRequestDeleteChecklistItem = (id: string) => {
+    setDeleteTargetId(id);
+    setEnteredDeletePin('');
+    setDeletePinError('');
+  };
 
-      onUpdatePackageStage({
-        ...currentPkg,
-        documentChecklist: updatedList,
-      });
+  // Confirm deletion with PIN verification
+  const handleConfirmDeleteWithPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deleteTargetId) return;
+
+    if (enteredDeletePin.trim().toLowerCase() !== REQUIRED_DELETE_PIN.toLowerCase()) {
+      setDeletePinError('PIN Otorisasi Penghapusan Salah! Akses Ditolak.');
+      return;
     }
+
+    const updatedList = localChecklist.filter((item) => item.id !== deleteTargetId);
+    setLocalChecklist(updatedList);
+
+    onUpdatePackageStage({
+      ...currentPkg,
+      documentChecklist: updatedList,
+    });
+
+    setDeleteTargetId(null);
+    setEnteredDeletePin('');
+    setDeletePinError('');
   };
 
   // Sync state whenever active package changes
@@ -942,9 +968,9 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                                 <span className="font-bold text-stone-900 text-xs block">{item.title}</span>
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteChecklistItem(item.id)}
+                                  onClick={() => handleRequestDeleteChecklistItem(item.id)}
                                   className="p-1 text-stone-400 hover:text-rose-600 rounded transition-colors shrink-0 cursor-pointer"
-                                  title="Hapus item ceklist dokumen ini"
+                                  title="Hapus item ceklist dokumen ini (Dilindungi PIN)"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -1629,6 +1655,97 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
           onSaveEvaluation={handleSaveMatrixEvaluation}
         />
       )}
+      {/* Modal Otorisasi PIN Penghapusan Ceklist */}
+      {deleteTargetId && (
+        <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-stone-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-rose-100 text-rose-900 rounded-lg">
+                  <Lock className="w-5 h-5 text-[#701524]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-sm">Otorisasi PIN Penghapusan Dokumen</h3>
+                  <p className="text-[11px] text-stone-500">
+                    Masukkan PIN Keamanan Pejabat Pengadaan untuk menghapus item ini
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteTargetId(null);
+                  setEnteredDeletePin('');
+                  setDeletePinError('');
+                }}
+                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-rose-50 border border-rose-200/80 rounded-xl p-3 text-xs text-rose-900 space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-rose-800">
+                <AlertTriangle className="w-4 h-4 text-rose-700 shrink-0" />
+                <span>Dokumen yang akan dihapus:</span>
+              </p>
+              <p className="font-semibold text-stone-800 bg-white/80 px-2.5 py-1.5 rounded-lg border border-rose-200/80 font-mono text-[11px] truncate">
+                {localChecklist.find((i) => i.id === deleteTargetId)?.title || 'Item Ceklist Dokumen'}
+              </p>
+            </div>
+
+            <form onSubmit={handleConfirmDeleteWithPin} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-stone-700 block mb-1">
+                  Masukkan PIN Otorisasi <span className="text-rose-600">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    autoFocus
+                    value={enteredDeletePin}
+                    onChange={(e) => {
+                      setEnteredDeletePin(e.target.value);
+                      if (deletePinError) setDeletePinError('');
+                    }}
+                    placeholder="Masukkan PIN (e.g. 301026-pbj)"
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-stone-300 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-[#701524] tracking-wider"
+                  />
+                  <KeyRound className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
+                </div>
+                {deletePinError && (
+                  <p className="text-[11px] font-bold text-rose-600 mt-1.5 flex items-center gap-1">
+                    <X className="w-3.5 h-3.5" /> {deletePinError}
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-stone-200 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteTargetId(null);
+                    setEnteredDeletePin('');
+                    setDeletePinError('');
+                  }}
+                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Verifikasi & Hapus</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal Tambah Item Ceklist Dokumen */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
