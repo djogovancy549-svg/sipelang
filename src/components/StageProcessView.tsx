@@ -868,11 +868,11 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
               </button>
 
               <a
-                href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                href="https://unggahsipelang.pages.dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full px-3.5 py-2.5 bg-gradient-to-r from-[#701524] via-rose-800 to-[#8b1a2d] hover:from-[#59101c] hover:to-[#701524] text-white font-extrabold text-xs rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-rose-300/40 group active:scale-[0.98]"
-                title="Buka Google Apps Script untuk unggah berkas & foto"
+                title="Buka Web Unggah SIPELANG untuk unggah berkas & foto"
               >
                 <UploadCloud className="w-4 h-4 text-amber-300 shrink-0 group-hover:scale-110 transition-transform" />
                 <span className="truncate">Unggah Dokumen dan Foto</span>
@@ -988,7 +988,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                                   </span>
 
                                   <a
-                                    href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                                    href="https://unggahsipelang.pages.dev"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-[10px] font-extrabold text-[#701524] hover:text-[#500f1a] inline-flex items-center gap-1 bg-gradient-to-r from-rose-50 to-amber-50 hover:from-rose-100 hover:to-amber-100 px-2 py-0.8 rounded-lg border border-rose-200/90 shadow-2xs shrink-0 transition-all cursor-pointer group"
@@ -1591,7 +1591,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
               <a
                 href={
                   previewDriveDoc.fileUrl ||
-                  'https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec'
+                  'https://unggahsipelang.pages.dev'
                 }
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1608,7 +1608,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                     const url =
                       previewDriveDoc.downloadUrl ||
                       previewDriveDoc.fileUrl ||
-                      'https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec';
+                      'https://unggahsipelang.pages.dev';
                     window.open(url, '_blank');
                   }}
                   className="py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"

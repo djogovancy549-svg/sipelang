@@ -12,7 +12,7 @@ export interface GoogleIntegrationSettings {
 }
 
 export const DEFAULT_INTEGRATION_SETTINGS: GoogleIntegrationSettings = {
-  webhookUrl: localStorage.getItem('sipelang_webhook_url') || 'https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec',
+  webhookUrl: localStorage.getItem('sipelang_webhook_url') || 'https://unggahsipelang.pages.dev',
   sheetUrl: localStorage.getItem('sipelang_sheet_url') || '',
   driveDocsFolderUrl: 'https://drive.google.com/drive/folders/1FI_KsR6FAUuDIYs3ule8eBbnz4oUH-gh?usp=sharing',
   drivePhotosFolderUrl: 'https://drive.google.com/drive/folders/1oXZ8J4QG9j38x0ZkzqSQMlYH5WDuIejK?usp=sharing',

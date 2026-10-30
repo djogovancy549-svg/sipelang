@@ -897,7 +897,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
 
             <div className="flex items-center gap-2 flex-wrap">
               <a
-                href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                href="https://unggahsipelang.pages.dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 shadow-xs cursor-pointer"
