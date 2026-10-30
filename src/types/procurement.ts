@@ -72,10 +72,13 @@ export interface PackageStageState {
   checklists: StageChecklistItem[];
 }
 
+export type ChecklistItemStatus = 'BELUM_DIMASUKKAN' | 'BELUM_LENGKAP' | 'DISETUJUI' | 'SIAP_PROSES_PL';
+
 export interface DocumentChecklistItem {
   id: string;
   title: string;
   isDone: boolean;
+  status?: ChecklistItemStatus;
   documentNumber?: string;
   date?: string;
   notes?: string;

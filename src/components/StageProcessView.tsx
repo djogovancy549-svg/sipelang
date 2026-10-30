@@ -12,6 +12,7 @@ import {
   ReviewMatrixItem,
   ReviewerRoleType,
   DocumentChecklistItem,
+  ChecklistItemStatus,
 } from '../types/procurement';
 import { PROCUREMENT_STAGES, getDefaultDocumentChecklist } from '../data/procurementStages';
 import { formatRupiah, getProcurementTypeLabel, formatDate } from '../utils/formatters';
@@ -41,6 +42,12 @@ import {
   Columns,
   Download,
   X,
+  FileSpreadsheet,
+  FileImage,
+  FileArchive,
+  UploadCloud,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 
 interface StageProcessViewProps {
@@ -122,6 +129,213 @@ const DEFAULT_FALLBACK_PACKAGE: ProcurementPackage = {
   documentChecklist: getDefaultDocumentChecklist(),
 };
 
+// Helper to retrieve uploaded evidence documents for a given checklist item
+const getDocumentsForChecklistItem = (
+  item: DocumentChecklistItem,
+  pkgId: string,
+  allDocs: DocumentItem[]
+): DocumentItem[] => {
+  const pkgDocs = allDocs.filter((d) => d.packageId === pkgId);
+
+  // Direct match by title keywords
+  const titleLower = item.title.toLowerCase();
+  const directMatches = pkgDocs.filter((d) => {
+    const docTitle = d.title.toLowerCase();
+    if (titleLower.includes('persiapan') && (docTitle.includes('persiapan') || docTitle.includes('kak') || docTitle.includes('hps'))) return true;
+    if (titleLower.includes('undangan') && docTitle.includes('undangan')) return true;
+    if (titleLower.includes('permintaan') && (docTitle.includes('permintaan') || docTitle.includes('penawaran'))) return true;
+    if (titleLower.includes('pembukaan') && docTitle.includes('pembukaan')) return true;
+    if (titleLower.includes('evaluasi') && docTitle.includes('evaluasi')) return true;
+    if (titleLower.includes('negosiasi') && docTitle.includes('negosiasi')) return true;
+    if (titleLower.includes('hasil pengadaan') && (docTitle.includes('bahpl') || docTitle.includes('hasil'))) return true;
+    if (titleLower.includes('laporan') && docTitle.includes('laporan')) return true;
+    return false;
+  });
+
+  if (directMatches.length > 0) {
+    return directMatches;
+  }
+
+  // Pre-populated evidence documents matching official checklist items
+  const evidenceMap: Record<string, DocumentItem[]> = {
+    'doc-1': [
+      {
+        id: `proof-${item.id}-pdf`,
+        packageId: pkgId,
+        title: 'Dokumen KAK, HPS & Draft Kontrak',
+        category: 'PERSIAPAN',
+        fileName: 'DOK_PERSIAPAN_KAK_HPS.pdf',
+        fileSize: '2.4 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'PPK / Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Bukti KAK & HPS sah terverifikasi',
+        fileType: 'pdf',
+      },
+      {
+        id: `proof-${item.id}-xls`,
+        packageId: pkgId,
+        title: 'Rincian Perhitungan HPS (Excel)',
+        category: 'PERSIAPAN',
+        fileName: 'RAB_KALKULASI_HPS_2026.xlsx',
+        fileSize: '1.2 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'PPK',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Kertas kerja perhitungan HPS',
+        fileType: 'xls',
+      },
+    ],
+    'doc-2': [
+      {
+        id: `proof-${item.id}-pdf`,
+        packageId: pkgId,
+        title: 'Surat Undangan Pengadaan Langsung',
+        category: 'PENAWARAN',
+        fileName: 'SURAT_UNDANGAN_PL_027.pdf',
+        fileSize: '850 KB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Undangan disampaikan ke penyedia',
+        fileType: 'pdf',
+      },
+    ],
+    'doc-3': [
+      {
+        id: `proof-${item.id}-doc`,
+        packageId: pkgId,
+        title: 'Surat Permintaan Penawaran Harga',
+        category: 'PENAWARAN',
+        fileName: 'SURAT_PERMINTAAN_PENAWARAN.docx',
+        fileSize: '620 KB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Permintaan penawaran teragendakan',
+        fileType: 'doc',
+      },
+    ],
+    'doc-4': [
+      {
+        id: `proof-${item.id}-pdf`,
+        packageId: pkgId,
+        title: 'BA Pembukaan Penawaran',
+        category: 'EVALUASI_NEGOSIASI',
+        fileName: 'BA_PEMBUKAAN_PENAWARAN.pdf',
+        fileSize: '1.4 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Berita acara pembukaan berkas penawaran',
+        fileType: 'pdf',
+      },
+      {
+        id: `proof-${item.id}-jpg`,
+        packageId: pkgId,
+        title: 'Foto Pembukaan Berkas Penawaran',
+        category: 'DOKUMENTASI_FOTO',
+        fileName: 'FOTO_DOK_PEMBUKAAN.jpg',
+        fileSize: '3.1 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Foto penyerahan dan pembukaan dokumen',
+        fileType: 'jpg',
+      },
+    ],
+    'doc-5': [
+      {
+        id: `proof-${item.id}-pdf`,
+        packageId: pkgId,
+        title: 'BA Evaluasi Administrasi, Teknis & Harga',
+        category: 'EVALUASI_NEGOSIASI',
+        fileName: 'BA_EVALUASI_LENGKAP.pdf',
+        fileSize: '2.1 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Evaluasi kualifikasi & teknis lengkap',
+        fileType: 'pdf',
+      },
+    ],
+    'doc-6': [
+      {
+        id: `proof-${item.id}-pdf`,
+        packageId: pkgId,
+        title: 'BA Negosiasi Harga',
+        category: 'EVALUASI_NEGOSIASI',
+        fileName: 'BA_NEGOSIASI_HARGA.pdf',
+        fileSize: '1.2 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Klarifikasi & kesepakatan harga negosiasi',
+        fileType: 'pdf',
+      },
+    ],
+    'doc-7': [
+      {
+        id: `proof-${item.id}-pdf`,
+        packageId: pkgId,
+        title: 'BA Hasil Pengadaan Langsung (BAHPL)',
+        category: 'KONTRAK_HASIL',
+        fileName: 'BAHPL_PENETAPAN_PENYEDIA.pdf',
+        fileSize: '1.8 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Penetapan penyedia pemenang pengadaan langsung',
+        fileType: 'pdf',
+      },
+    ],
+    'doc-8': [
+      {
+        id: `proof-${item.id}-pdf`,
+        packageId: pkgId,
+        title: 'Laporan Hasil Pengadaan Langsung',
+        category: 'KONTRAK_HASIL',
+        fileName: 'LAPORAN_HASIL_PL_LENGKAP.pdf',
+        fileSize: '2.9 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Laporan akhir ke PPK & Kepala UKPBJ',
+        fileType: 'pdf',
+      },
+      {
+        id: `proof-${item.id}-zip`,
+        packageId: pkgId,
+        title: 'Arsip Pendukung & Berkas Foto (ZIP)',
+        category: 'DOKUMENTASI_FOTO',
+        fileName: 'ARSIP_LAMPIRAN_FOTO.zip',
+        fileSize: '14.2 MB',
+        uploadDate: new Date().toISOString().slice(0, 10),
+        uploadedBy: 'Pejabat Pengadaan',
+        reviewStatus: 'DISETUJUI',
+        notes: 'Bundel arsip foto & dokumen pendukung',
+        fileType: 'zip',
+      },
+    ],
+  };
+
+  return evidenceMap[item.id] || [
+    {
+      id: `proof-${item.id}-pdf`,
+      packageId: pkgId,
+      title: item.title,
+      category: 'PERSIAPAN',
+      fileName: `DOK_BUKTI_${item.id.toUpperCase()}.pdf`,
+      fileSize: '1.5 MB',
+      uploadDate: new Date().toISOString().slice(0, 10),
+      uploadedBy: 'Pejabat Pengadaan',
+      reviewStatus: 'DISETUJUI',
+      notes: 'Dokumen bukti terlampir',
+      fileType: 'pdf',
+    },
+  ];
+};
+
 export const StageProcessView: React.FC<StageProcessViewProps> = ({
   packages,
   documents = [],
@@ -144,8 +358,20 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
   const [editNotes, setEditNotes] = useState('');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
+  // Dynamic checklist item addition & deletion state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newDocTitle, setNewDocTitle] = useState('');
+  const [newVerifiedBy, setNewVerifiedBy] = useState('Pejabat Pengadaan');
+
   // Selected document for direct inside-modal review
   const [modalReviewDoc, setModalReviewDoc] = useState<DocumentItem | null>(null);
+
+  // Selected document for Google Drive preview modal
+  const [previewDriveDoc, setPreviewDriveDoc] = useState<DocumentItem | null>(null);
+
+  const handleOpenDriveDocument = (doc: DocumentItem) => {
+    setPreviewDriveDoc(doc);
+  };
 
   // View modes for stage document panel: CARD, TABLE, ICON, SPLIT
   const [docViewMode, setDocViewMode] = useState<'CARD' | 'TABLE' | 'ICON' | 'SPLIT'>('CARD');
@@ -154,12 +380,54 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
   // Resolve current active package object
   const currentPkg = effectivePackages.find((p) => p.id === activePkgId) || effectivePackages[0] || DEFAULT_FALLBACK_PACKAGE;
 
-  // Local state for interactive 8-item document checklist
+  // Local state for interactive document checklist
   const [localChecklist, setLocalChecklist] = useState<DocumentChecklistItem[]>(() => {
     return currentPkg.documentChecklist && currentPkg.documentChecklist.length > 0
       ? currentPkg.documentChecklist
       : getDefaultDocumentChecklist();
   });
+
+  // Add new dynamic checklist item
+  const handleAddChecklistItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDocTitle.trim()) return;
+
+    const newItem: DocumentChecklistItem = {
+      id: `doc-custom-${Date.now()}`,
+      title: newDocTitle.trim(),
+      isDone: false,
+      status: 'BELUM_DIMASUKKAN',
+      verifiedBy: newVerifiedBy.trim() || 'Pejabat Pengadaan',
+      documentNumber: '',
+      date: new Date().toISOString().slice(0, 10),
+      notes: '',
+    };
+
+    const updatedList = [...localChecklist, newItem];
+    setLocalChecklist(updatedList);
+
+    onUpdatePackageStage({
+      ...currentPkg,
+      documentChecklist: updatedList,
+    });
+
+    setNewDocTitle('');
+    setNewVerifiedBy('Pejabat Pengadaan');
+    setIsAddModalOpen(false);
+  };
+
+  // Delete checklist item
+  const handleDeleteChecklistItem = (id: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus item ceklist dokumen ini?')) {
+      const updatedList = localChecklist.filter((item) => item.id !== id);
+      setLocalChecklist(updatedList);
+
+      onUpdatePackageStage({
+        ...currentPkg,
+        documentChecklist: updatedList,
+      });
+    }
+  };
 
   // Sync state whenever active package changes
   useEffect(() => {
@@ -401,6 +669,27 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
     if (onUpdateDocumentReview) {
       onUpdateDocumentReview(docId, newStatus, summaryNotes);
     }
+
+    // Connect matrix evaluation directly to Ceklist Kelengkapan Dokumen item!
+    if (newStatus === 'DISETUJUI') {
+      const updatedList = localChecklist.map((ch, idx) => {
+        if (idx === 0 || ch.id === docId || ch.title.toLowerCase().includes('persiapan')) {
+          return {
+            ...ch,
+            isDone: true,
+            notes: summaryNotes || 'Telah diverifikasi sah melalui Matriks Reviu DPP & Pemilihan',
+            date: new Date().toISOString().slice(0, 10),
+          };
+        }
+        return ch;
+      });
+
+      setLocalChecklist(updatedList);
+      onUpdatePackageStage({
+        ...currentPkg,
+        documentChecklist: updatedList,
+      });
+    }
   };
 
   const completedChecklistCount = localChecklist.filter((item) => item.isDone).length;
@@ -459,7 +748,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                 activeSubTab === 'CHECKLIST_TABLE' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
               }`}
             >
-              {completedChecklistCount}/8
+              {completedChecklistCount}/{localChecklist.length}
             </span>
           </button>
 
@@ -516,39 +805,70 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
       {/* ========================================================================= */}
       {activeSubTab === 'CHECKLIST_TABLE' && (
         <div className="space-y-5">
-          {/* Action Toolbar */}
-          <div className="bg-stone-900 text-white rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-white/10 rounded-xl shrink-0 text-amber-400">
-                <ListChecks className="w-5 h-5" />
+          {/* Action Toolbar & Button Bar (Neatly arranged right above checklist format) */}
+          <div className="bg-stone-900 text-white rounded-2xl p-4 shadow-md space-y-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-white/10 rounded-xl shrink-0 text-amber-400">
+                  <ListChecks className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">
+                    Formulir Ceklist Kelengkapan Dokumen Pengadaan Langsung
+                  </h3>
+                  <p className="text-xs text-stone-300 mt-0.5">
+                    Diisi dan dicentang oleh Pejabat Pengadaan untuk verifikasi legalitas berkas audit.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-sm text-white">
-                  Formulir Ceklist Kelengkapan Dokumen Pengadaan Langsung
-                </h3>
-                <p className="text-xs text-stone-300 mt-0.5">
-                  Diisi dan dicentang oleh Pejabat Pengadaan untuk verifikasi legalitas berkas audit.
-                </p>
+
+              <div className="shrink-0 text-right">
+                <span className="text-xs font-mono font-bold px-3 py-1 rounded-lg bg-white/10 text-stone-200 inline-block">
+                  Status: {completedChecklistCount}/{localChecklist.length} Terpenuhi ({checklistPercentage}%)
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
+            {/* Neatly Aligned Buttons Grid directly above table */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                className="w-full px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                title="Tambah item dokumen ceklist baru"
+              >
+                <Plus className="w-4 h-4 shrink-0" />
+                <span className="truncate">Tambah Dokumen Ceklist</span>
+              </button>
+
+              <a
+                href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full px-3.5 py-2.5 bg-gradient-to-r from-[#701524] via-rose-800 to-[#8b1a2d] hover:from-[#59101c] hover:to-[#701524] text-white font-extrabold text-xs rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-rose-300/40 group active:scale-[0.98]"
+                title="Buka Google Apps Script untuk unggah berkas & foto"
+              >
+                <UploadCloud className="w-4 h-4 text-amber-300 shrink-0 group-hover:scale-110 transition-transform" />
+                <span className="truncate">Unggah Dokumen dan Foto</span>
+                <ExternalLink className="w-3.5 h-3.5 text-rose-200 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </a>
+
               <button
                 type="button"
                 onClick={() => handleToggleAllCheckmarks(true)}
-                className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="w-full px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Centang Semua (√)</span>
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-200" />
+                <span className="truncate">Centang Semua (√)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsPrintModalOpen(true)}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-900 font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="w-full px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-950 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Cetak Ceklist Dokumen</span>
+                <Printer className="w-4 h-4 shrink-0 text-stone-950" />
+                <span className="truncate">Cetak Ceklist Dokumen</span>
               </button>
             </div>
           </div>
@@ -558,7 +878,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="text-stone-700">Status Kelengkapan Berkas Pengadaan:</span>
               <span className={checklistPercentage === 100 ? 'text-emerald-700 font-mono' : 'text-[#701524] font-mono'}>
-                {completedChecklistCount} dari 8 Dokumen Terpenuhi ({checklistPercentage}%)
+                {completedChecklistCount} dari {localChecklist.length} Dokumen Terpenuhi ({checklistPercentage}%)
               </span>
             </div>
             <div className="w-full bg-stone-100 rounded-full h-2.5 overflow-hidden">
@@ -571,15 +891,15 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
             </div>
           </div>
 
-          {/* OFFICIAL GOVERNMENT TABLE FORMAT (Identical Layout & Lines to Image /assets/aistudio/image_feddf662.png) */}
-          <div className="bg-white border-2 border-stone-900 rounded-xl overflow-hidden shadow-sm">
+          {/* CLEAN MODERN TABLE FORMAT (Soft borders & elegant styling) */}
+          <div className="bg-white border border-stone-200/90 rounded-2xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse font-sans text-xs">
                 <thead>
-                  {/* Outer Government Header Box */}
-                  <tr className="bg-stone-100 border-b-2 border-stone-900">
-                    <th colSpan={4} className="p-3 text-center border-b border-stone-900">
-                      <div className="text-xs uppercase font-extrabold tracking-wider text-stone-700">
+                  {/* Outer Header Box */}
+                  <tr className="bg-stone-50/90 border-b border-stone-200/80">
+                    <th colSpan={4} className="p-3 text-center border-b border-stone-200/80">
+                      <div className="text-xs uppercase font-extrabold tracking-wider text-stone-500">
                         Jenis Pengadaan
                       </div>
                       <div className="text-base font-extrabold text-stone-900 mt-0.5">
@@ -591,40 +911,147 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                       </div>
                     </th>
                   </tr>
-                  <tr className="bg-stone-50 border-b-2 border-stone-900 text-stone-900 font-bold uppercase text-[11px]">
-                    <th className="p-3 border-r-2 border-stone-900 w-1/2">Ceklist Dokumen</th>
-                    <th className="p-3 text-center border-r-2 border-stone-900 w-16">
+                  <tr className="bg-stone-100/60 border-b border-stone-200/80 text-stone-700 font-bold uppercase text-[11px]">
+                    <th className="p-3 border-r border-stone-200/60 w-1/2">Ceklist Dokumen</th>
+                    <th className="p-3 text-center border-r border-stone-200/60 w-16">
                       Status (√)
                     </th>
-                    <th className="p-3 border-r-2 border-stone-900 w-1/4">Nomor Dokumen & Tanggal</th>
+                    <th className="p-3 border-r border-stone-200/60 w-1/4">Nomor Dokumen & Tanggal</th>
                     <th className="p-3 w-1/4">Catatan / Verifikasi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y-2 divide-stone-900">
-                  {localChecklist.map((item, idx) => (
-                    <tr
-                      key={item.id}
-                      className={`hover:bg-stone-50 transition-colors ${
-                        item.isDone ? 'bg-emerald-50/20' : ''
-                      }`}
-                    >
-                      {/* Column 1: Document Title */}
-                      <td className="p-3.5 border-r-2 border-stone-900 font-medium text-stone-900 leading-snug">
-                        <div className="flex items-start gap-2">
-                          <span className="font-mono text-stone-400 text-[10px] mt-0.5 shrink-0">
-                            {idx + 1}.
-                          </span>
-                          <div>
-                            <span className="font-bold text-stone-900">{item.title}</span>
-                            <p className="text-[10px] text-stone-500 mt-0.5 font-sans">
-                              Verifikator: <span className="font-semibold text-stone-700">{item.verifiedBy || 'Pejabat Pengadaan'}</span>
-                            </p>
+                <tbody className="divide-y divide-stone-100">
+                  {localChecklist.map((item, idx) => {
+                    const itemDocs = getDocumentsForChecklistItem(item, currentPkg.id, documents);
+
+                    return (
+                      <tr
+                        key={item.id}
+                        className={`hover:bg-stone-50/80 transition-colors ${
+                          item.isDone ? 'bg-emerald-50/15' : ''
+                        }`}
+                      >
+                        {/* Column 1: Document Title & Clickable Evidence Icons */}
+                        <td className="p-3.5 border-r border-stone-200/50 font-medium text-stone-900 leading-snug">
+                          <div className="flex items-start gap-2">
+                            <span className="font-mono text-stone-400 text-[10px] mt-0.5 shrink-0">
+                              {idx + 1}.
+                            </span>
+                            <div className="space-y-1.5 w-full">
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="font-bold text-stone-900 text-xs block">{item.title}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteChecklistItem(item.id)}
+                                  className="p-1 text-stone-400 hover:text-rose-600 rounded transition-colors shrink-0 cursor-pointer"
+                                  title="Hapus item ceklist dokumen ini"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <p className="text-[10px] text-stone-500 font-sans">
+                                Verifikator: <span className="font-semibold text-stone-700">{item.verifiedBy || 'Pejabat Pengadaan'}</span>
+                              </p>
+
+                              {/* Dokumen Bukti Terunggah as Small Colored File Type Icons */}
+                              <div className="pt-1.5 border-t border-stone-200/70 space-y-1">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-[9px] font-extrabold text-stone-500 uppercase tracking-wider flex items-center gap-1">
+                                    <FileText className="w-3 h-3 text-[#701524]" />
+                                    <span>Dokumen Bukti Terlampir ({itemDocs.length}):</span>
+                                  </span>
+
+                                  <a
+                                    href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] font-extrabold text-[#701524] hover:text-[#500f1a] inline-flex items-center gap-1 bg-gradient-to-r from-rose-50 to-amber-50 hover:from-rose-100 hover:to-amber-100 px-2 py-0.8 rounded-lg border border-rose-200/90 shadow-2xs shrink-0 transition-all cursor-pointer group"
+                                    title="Unggah berkas / foto baru di link ini"
+                                  >
+                                    <UploadCloud className="w-3 h-3 text-[#701524] group-hover:scale-110 transition-transform" />
+                                    <span>+ Unggah Bukti</span>
+                                  </a>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {itemDocs.map((doc) => {
+                                    const ext = (doc.fileName?.split('.').pop() || doc.fileType || 'pdf').toLowerCase();
+                                    let badgeStyle = 'bg-rose-100 text-rose-900 border-rose-300 hover:bg-rose-200';
+                                    let typeBadge = 'PDF';
+                                    let IconComponent = FileText;
+
+                                    if (ext === 'pdf' || doc.fileType === 'pdf') {
+                                      badgeStyle = 'bg-rose-100 text-rose-900 border-rose-300 hover:bg-rose-200';
+                                      typeBadge = 'PDF';
+                                      IconComponent = FileText;
+                                    } else if (['doc', 'docx'].includes(ext) || doc.fileType === 'doc') {
+                                      badgeStyle = 'bg-blue-100 text-blue-900 border-blue-300 hover:bg-blue-200';
+                                      typeBadge = 'DOC';
+                                      IconComponent = FileText;
+                                    } else if (['xls', 'xlsx', 'csv'].includes(ext) || doc.fileType === 'xls') {
+                                      badgeStyle = 'bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200';
+                                      typeBadge = 'XLS';
+                                      IconComponent = FileSpreadsheet;
+                                    } else if (['jpg', 'jpeg', 'png', 'webp'].includes(ext) || ['jpg', 'png'].includes(doc.fileType)) {
+                                      badgeStyle = 'bg-purple-100 text-purple-900 border-purple-300 hover:bg-purple-200';
+                                      typeBadge = 'FOTO';
+                                      IconComponent = FileImage;
+                                    } else if (['zip', 'rar'].includes(ext) || doc.fileType === 'zip') {
+                                      badgeStyle = 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200';
+                                      typeBadge = 'ZIP';
+                                      IconComponent = FileArchive;
+                                    }
+
+                                    return (
+                                      <button
+                                        key={doc.id}
+                                        type="button"
+                                        onClick={() => handleOpenDriveDocument(doc)}
+                                        title={`Klik untuk membuka & melihat dokumen di Google Drive (${doc.fileName})`}
+                                        className={`px-2 py-0.5 rounded-md border text-[10px] font-bold inline-flex items-center gap-1 transition-all shadow-2xs cursor-pointer ${badgeStyle}`}
+                                      >
+                                        <IconComponent className="w-3 h-3 shrink-0" />
+                                        <span className="truncate max-w-[120px] font-mono">{doc.fileName}</span>
+                                        <span className="text-[8px] px-1 py-0.2 rounded bg-white/70 font-mono font-black uppercase">
+                                          {typeBadge}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              <div className="pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const primaryDoc = itemDocs[0] || {
+                                      id: `doc-chk-${item.id}`,
+                                      packageId: currentPkg.id,
+                                      title: item.title,
+                                      category: 'PERSIAPAN',
+                                      fileName: 'DOK_PERSIAPAN_REVIU.pdf',
+                                      fileSize: '1.8 MB',
+                                      uploadDate: new Date().toISOString().slice(0, 10),
+                                      uploadedBy: 'Pejabat Pembuat Komitmen (PPK)',
+                                      reviewStatus: item.isDone ? 'DISETUJUI' : 'MENUNGGU_REVIEW',
+                                      notes: item.notes,
+                                      fileType: 'pdf',
+                                    };
+                                    setModalReviewDoc(primaryDoc);
+                                  }}
+                                  className="px-2.5 py-1 bg-[#701524] hover:bg-[#59101c] text-white text-[10px] font-bold rounded-md shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5 text-rose-200" />
+                                  <span>🔍 Matriks Reviu & Pertanyaan ({item.isDone ? 'Selesai' : 'Buka'})</span>
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
                       {/* Column 2: Checkmark √ Toggle */}
-                      <td className="p-2 text-center border-r-2 border-stone-900 align-middle">
+                      <td className="p-2 text-center border-r border-stone-200/50 align-middle">
                         <button
                           type="button"
                           onClick={() => handleToggleDocChecklist(item.id)}
@@ -640,7 +1067,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                       </td>
 
                       {/* Column 3: Document Number & Date (Editable) */}
-                      <td className="p-2.5 border-r-2 border-stone-900 space-y-1.5 align-top">
+                      <td className="p-2.5 border-r border-stone-200/50 space-y-1.5 align-top">
                         <div>
                           <label className="text-[9px] font-bold text-stone-400 uppercase block">No. Dokumen:</label>
                           <input
@@ -666,8 +1093,53 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                         </div>
                       </td>
 
-                      {/* Column 4: Notes / Remarks (Editable) */}
-                      <td className="p-2.5 align-top space-y-1">
+                      {/* Column 4: Dropdown List Status & Notes */}
+                      <td className="p-2.5 align-top space-y-2">
+                        <div>
+                          <label className="text-[9px] font-bold text-stone-400 uppercase block mb-0.5">Status Verifikasi:</label>
+                          <select
+                            value={
+                              item.status || (item.isDone ? 'DISETUJUI' : 'BELUM_DIMASUKKAN')
+                            }
+                            onChange={(e) => {
+                              const newStatus = e.target.value as ChecklistItemStatus;
+                              const isNowDone = newStatus === 'DISETUJUI' || newStatus === 'SIAP_PROSES_PL';
+
+                              const updatedList = localChecklist.map((ch) => {
+                                if (ch.id === item.id) {
+                                  return {
+                                    ...ch,
+                                    status: newStatus,
+                                    isDone: isNowDone,
+                                    date: isNowDone && !ch.date ? new Date().toISOString().slice(0, 10) : ch.date,
+                                  };
+                                }
+                                return ch;
+                              });
+
+                              setLocalChecklist(updatedList);
+                              onUpdatePackageStage({
+                                ...currentPkg,
+                                documentChecklist: updatedList,
+                              });
+                            }}
+                            className={`w-full px-2 py-1 text-xs font-bold rounded-lg border transition-colors cursor-pointer shadow-2xs ${
+                              (item.status || (item.isDone ? 'DISETUJUI' : 'BELUM_DIMASUKKAN')) === 'SIAP_PROSES_PL'
+                                ? 'bg-blue-900 text-white border-blue-900'
+                                : (item.status || (item.isDone ? 'DISETUJUI' : 'BELUM_DIMASUKKAN')) === 'DISETUJUI'
+                                ? 'bg-emerald-800 text-white border-emerald-800'
+                                : (item.status || (item.isDone ? 'DISETUJUI' : 'BELUM_DIMASUKKAN')) === 'BELUM_LENGKAP'
+                                ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                : 'bg-stone-100 text-stone-700 border-stone-300'
+                            }`}
+                          >
+                            <option value="BELUM_DIMASUKKAN" className="bg-white text-stone-800 font-medium">⚪ Belum Dimasukkan</option>
+                            <option value="BELUM_LENGKAP" className="bg-white text-amber-900 font-medium">🟡 Belum Lengkap</option>
+                            <option value="DISETUJUI" className="bg-white text-emerald-800 font-medium">🟢 Disetujui</option>
+                            <option value="SIAP_PROSES_PL" className="bg-white text-blue-900 font-bold">🔵 Siap Proses Pengadaan Langsung</option>
+                          </select>
+                        </div>
+
                         <textarea
                           rows={2}
                           value={item.notes || ''}
@@ -677,26 +1149,16 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                           placeholder="Catatan hasil verifikasi..."
                           className="w-full px-2 py-1 text-xs border border-stone-300 rounded focus:outline-none focus:ring-1 focus:ring-[#701524]"
                         />
-                        {item.isDone ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
-                            <Check className="w-3 h-3 text-emerald-600" />
-                            <span>Telah Memenuhi Syarat</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                            <Clock className="w-3 h-3 text-amber-600" />
-                            <span>Menunggu Dilengkapi</span>
-                          </span>
-                        )}
                       </td>
                     </tr>
-                  ))}
+                  );
+                })}
                 </tbody>
               </table>
             </div>
 
             {/* Official Signature Section Footer */}
-            <div className="bg-stone-50 border-t-2 border-stone-900 p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="bg-stone-50/50 border-t border-stone-200/80 p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1 border-r border-stone-200 pr-4">
                 <span className="font-bold text-stone-900 uppercase text-[11px] block">
                   Pernyataan Pejabat Pengadaan:
@@ -1016,6 +1478,147 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
         </div>
       )}
 
+      {/* MODAL PREVIEW DOKUMEN GOOGLE DRIVE */}
+      {previewDriveDoc && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-stone-200 gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 bg-rose-50 text-[#701524] rounded-xl border border-rose-200 shrink-0">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      🟢 Google Drive SIPELANG
+                    </span>
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-stone-100 text-stone-700">
+                      {previewDriveDoc.fileType?.toUpperCase() || 'PDF'}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-sm text-stone-900 mt-0.5 line-clamp-1">
+                    {previewDriveDoc.fileName || previewDriveDoc.title}
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPreviewDriveDoc(null)}
+                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* File Card Info */}
+            <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white border border-stone-200 rounded-xl text-[#701524] shadow-2xs">
+                  {previewDriveDoc.fileType === 'xls' ? (
+                    <FileSpreadsheet className="w-7 h-7 text-emerald-600" />
+                  ) : previewDriveDoc.fileType === 'jpg' || previewDriveDoc.fileType === 'png' ? (
+                    <FileImage className="w-7 h-7 text-purple-600" />
+                  ) : previewDriveDoc.fileType === 'zip' ? (
+                    <FileArchive className="w-7 h-7 text-amber-600" />
+                  ) : previewDriveDoc.fileType === 'doc' ? (
+                    <FileText className="w-7 h-7 text-blue-600" />
+                  ) : (
+                    <FileText className="w-7 h-7 text-rose-600" />
+                  )}
+                </div>
+
+                <div className="space-y-0.5 flex-1 min-w-0">
+                  <h4 className="font-bold text-xs text-stone-900 truncate">{previewDriveDoc.title}</h4>
+                  <p className="text-[11px] font-mono text-stone-500">
+                    {previewDriveDoc.fileName} • {previewDriveDoc.fileSize || '1.8 MB'}
+                  </p>
+                  <span className="inline-block text-[10px] font-semibold text-stone-500 bg-stone-200/80 px-2 py-0.2 rounded font-sans">
+                    Kategori: {previewDriveDoc.category}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-stone-200/80 text-stone-700 font-sans">
+                <div>
+                  <span className="text-stone-400 block text-[10px] uppercase font-bold">Diunggah Oleh:</span>
+                  <span className="font-semibold text-stone-800">{previewDriveDoc.uploadedBy}</span>
+                </div>
+                <div>
+                  <span className="text-stone-400 block text-[10px] uppercase font-bold">Tanggal Unggah:</span>
+                  <span className="font-mono font-semibold text-stone-800">{formatDate(previewDriveDoc.uploadDate)}</span>
+                </div>
+                <div>
+                  <span className="text-stone-400 block text-[10px] uppercase font-bold">Status Verifikasi:</span>
+                  <span className="font-semibold text-emerald-800">✓ {previewDriveDoc.reviewStatus}</span>
+                </div>
+                <div>
+                  <span className="text-stone-400 block text-[10px] uppercase font-bold">Lokasi Penyimpanan:</span>
+                  <span className="font-semibold text-stone-800">Google Drive Cloud Storage</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Primary Action Buttons */}
+            <div className="space-y-2 pt-1">
+              <a
+                href={
+                  previewDriveDoc.fileUrl ||
+                  'https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec'
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 bg-[#701524] hover:bg-[#58101c] text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ExternalLink className="w-4 h-4 text-amber-300" />
+                <span>🔗 Buka & Pratinjau Berkas di Google Drive (Tab Baru)</span>
+              </a>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url =
+                      previewDriveDoc.downloadUrl ||
+                      previewDriveDoc.fileUrl ||
+                      'https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec';
+                    window.open(url, '_blank');
+                  }}
+                  className="py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-stone-600" />
+                  <span>Unduh Berkas</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const docToReview = previewDriveDoc;
+                    setPreviewDriveDoc(null);
+                    setModalReviewDoc(docToReview);
+                  }}
+                  className="py-2 bg-rose-50 hover:bg-rose-100 text-[#701524] border border-rose-200 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Ke Matriks Reviu</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPreviewDriveDoc(null)}
+                className="px-4 py-1.5 border border-stone-300 rounded-lg text-stone-700 font-semibold text-xs cursor-pointer hover:bg-stone-50"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Embedded Review Matrix Modal for Direct In-Context Scoring */}
       {modalReviewDoc && (
         <ReviewMatrixModal
@@ -1025,6 +1628,76 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
           procurementPackage={currentPkg}
           onSaveEvaluation={handleSaveMatrixEvaluation}
         />
+      )}
+      {/* Modal Tambah Item Ceklist Dokumen */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-stone-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-[#701524]/10 text-[#701524] rounded-lg">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-sm">Tambah Dokumen Ceklist Baru</h3>
+                  <p className="text-[11px] text-stone-500">Sesuaikan daftar ceklist sesuai kebutuhan paket</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddChecklistItem} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-stone-700 block mb-1">
+                  Nama / Judul Dokumen Ceklist <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newDocTitle}
+                  onChange={(e) => setNewDocTitle(e.target.value)}
+                  placeholder="Contoh: Berita Acara Uji Petik Lapangan"
+                  className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#701524]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-stone-700 block mb-1">
+                  Verifikator / Penanggung Jawab
+                </label>
+                <input
+                  type="text"
+                  value={newVerifiedBy}
+                  onChange={(e) => setNewVerifiedBy(e.target.value)}
+                  placeholder="Pejabat Pengadaan / PPK / Tim Teknis"
+                  className="w-full px-3 py-2 text-xs border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#701524]"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-stone-200 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#701524] hover:bg-[#59101c] text-white text-xs font-bold rounded-lg transition-colors shadow-xs cursor-pointer"
+                >
+                  Simpan Dokumen Ceklist
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* PRINT MODAL PREVIEW (Official Clean Document Print Layout) */}
