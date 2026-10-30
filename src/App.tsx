@@ -263,7 +263,7 @@ export default function App() {
   };
 
   // Derive title for top breadcrumb
-  const getTabTitle = () => {
+  const getTabTitle = (): string => {
     switch (activeTab) {
       case 'dashboard':
         return 'Dashboard Utama';
@@ -272,13 +272,17 @@ export default function App() {
       case 'unggah-dokumen':
         return 'Unggah Dokumen & Data Visual';
       case 'tahapan-proses':
-        return 'Tahapan Proses (Monitoring)';
+        return 'Tahapan Proses (Monitoring & Ceklist)';
+      case 'jadwal-undangan':
+        return 'Penjadwalan Pengadaan & Surat Undangan';
       case 'pengarsipan':
         return 'Pengarsipan Dokumen (E-Arsip)';
       case 'review-dokumen':
         return 'Review Dokumen (Telaah Kelayakan)';
       case 'penomoran-opd':
         return 'Pengaturan Penomoran Otomatis OPD';
+      default:
+        return 'SIPELANG Nagekeo';
     }
   };
 
@@ -375,6 +379,20 @@ export default function App() {
                 documents={documents}
                 onUpdatePackageStage={handleUpdatePackageStage}
                 selectedPackageId={stageTrackerPackageId}
+                initialSubTab="CHECKLIST_TABLE"
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenReviewDoc={(doc) => openReviewForDocument(doc)}
+                onUpdateDocumentReview={handleUpdateDocumentReview}
+              />
+            )}
+
+            {activeTab === 'jadwal-undangan' && (
+              <StageProcessView
+                packages={packages}
+                documents={documents}
+                onUpdatePackageStage={handleUpdatePackageStage}
+                selectedPackageId={stageTrackerPackageId}
+                initialSubTab="JADWAL_UNDANGAN"
                 onNavigateTab={(tab) => setActiveTab(tab)}
                 onOpenReviewDoc={(doc) => openReviewForDocument(doc)}
                 onUpdateDocumentReview={handleUpdateDocumentReview}

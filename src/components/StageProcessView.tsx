@@ -17,8 +17,10 @@ import {
 import { PROCUREMENT_STAGES, getDefaultDocumentChecklist } from '../data/procurementStages';
 import { formatRupiah, getProcurementTypeLabel, formatDate } from '../utils/formatters';
 import { ReviewMatrixModal } from './ReviewMatrixModal';
+import { ProcurementScheduleInvitationView } from './ProcurementScheduleInvitationView';
 import { MainNavTab } from './Sidebar';
 import {
+  Calendar,
   CheckCircle2,
   Clock,
   GitMerge,
@@ -58,6 +60,7 @@ interface StageProcessViewProps {
   documents?: DocumentItem[];
   onUpdatePackageStage: (updatedPkg: ProcurementPackage) => void;
   selectedPackageId?: string;
+  initialSubTab?: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'STAGE_WORKFLOW';
   onNavigateTab?: (tab: MainNavTab) => void;
   onOpenReviewDoc?: (doc: DocumentItem) => void;
   onUpdateDocumentReview?: (docId: string, status: ReviewStatus, notes: string) => void;
@@ -344,12 +347,21 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
   documents = [],
   onUpdatePackageStage,
   selectedPackageId: initialPkgId,
+  initialSubTab,
   onNavigateTab,
   onOpenReviewDoc,
   onUpdateDocumentReview,
 }) => {
-  // Main sub-view tab: 'CHECKLIST_TABLE' (Default & Prominent) vs 'STAGE_WORKFLOW'
-  const [activeSubTab, setActiveSubTab] = useState<'CHECKLIST_TABLE' | 'STAGE_WORKFLOW'>('CHECKLIST_TABLE');
+  // Main sub-view tab: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'STAGE_WORKFLOW'
+  const [activeSubTab, setActiveSubTab] = useState<'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'STAGE_WORKFLOW'>(
+    initialSubTab || 'CHECKLIST_TABLE'
+  );
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
 
   // Active selected package ID
   const effectivePackages = packages.length > 0 ? packages : [DEFAULT_FALLBACK_PACKAGE];
@@ -756,7 +768,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs between "Ceklist Kelengkapan Dokumen" and "6 Tahapan Proses" */}
+        {/* Navigation Tabs between "Ceklist Kelengkapan Dokumen", "Penjadwalan & Buat Surat Undangan", and "6 Tahapan Proses" */}
         <div className="flex items-center gap-2 pt-2 border-t border-stone-100 overflow-x-auto">
           <button
             type="button"
@@ -775,6 +787,26 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
               }`}
             >
               {completedChecklistCount}/{localChecklist.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('JADWAL_UNDANGAN')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeSubTab === 'JADWAL_UNDANGAN'
+                ? 'bg-[#701524] text-white shadow-xs'
+                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+            }`}
+          >
+            <Calendar className="w-4 h-4 text-amber-400" />
+            <span>Penjadwalan & Buat Surat Undangan</span>
+            <span
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                activeSubTab === 'JADWAL_UNDANGAN' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              Format Resmi Nagekeo
             </span>
           </button>
 
@@ -856,11 +888,11 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
             </div>
 
             {/* Neatly Aligned Buttons Grid directly above table */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-0.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-0.5">
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(true)}
-                className="w-full px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                className="w-full px-3 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 title="Tambah item dokumen ceklist baru"
               >
                 <Plus className="w-4 h-4 shrink-0" />
@@ -871,18 +903,28 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                 href="https://unggahsipelang.pages.dev"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full px-3.5 py-2.5 bg-gradient-to-r from-[#701524] via-rose-800 to-[#8b1a2d] hover:from-[#59101c] hover:to-[#701524] text-white font-extrabold text-xs rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-rose-300/40 group active:scale-[0.98]"
+                className="w-full px-3 py-2.5 bg-gradient-to-r from-[#701524] via-rose-800 to-[#8b1a2d] hover:from-[#59101c] hover:to-[#701524] text-white font-extrabold text-xs rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-rose-300/40 group active:scale-[0.98]"
                 title="Buka Web Unggah SIPELANG untuk unggah berkas & foto"
               >
                 <UploadCloud className="w-4 h-4 text-amber-300 shrink-0 group-hover:scale-110 transition-transform" />
-                <span className="truncate">Unggah Dokumen dan Foto</span>
+                <span className="truncate">Unggah Dokumen & Foto</span>
                 <ExternalLink className="w-3.5 h-3.5 text-rose-200 shrink-0 group-hover:translate-x-0.5 transition-transform" />
               </a>
 
               <button
                 type="button"
+                onClick={() => setActiveSubTab('JADWAL_UNDANGAN')}
+                className="w-full px-3 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-amber-400/40 group"
+                title="Buat dokumen Surat Undangan & Penjadwalan Pengadaan Langsung (Format Resmi Pemkab Nagekeo)"
+              >
+                <Calendar className="w-4 h-4 shrink-0 text-amber-200 group-hover:scale-110 transition-transform" />
+                <span className="truncate">Buat Surat Undangan & Jadwal</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handleToggleAllCheckmarks(true)}
-                className="w-full px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                className="w-full px-3 py-2.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-200" />
                 <span className="truncate">Centang Semua (√)</span>
@@ -891,7 +933,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsPrintModalOpen(true)}
-                className="w-full px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-950 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                className="w-full px-3 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-950 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
                 <Printer className="w-4 h-4 shrink-0 text-stone-950" />
                 <span className="truncate">Cetak Ceklist Dokumen</span>
@@ -1047,7 +1089,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                                 </div>
                               </div>
 
-                              <div className="pt-1">
+                              <div className="pt-1 flex items-center gap-2 flex-wrap">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1071,6 +1113,18 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                                   <ShieldCheck className="w-3.5 h-3.5 text-rose-200" />
                                   <span>🔍 Matriks Reviu & Pertanyaan ({item.isDone ? 'Selesai' : 'Buka'})</span>
                                 </button>
+
+                                {(item.id === 'dok-2' || item.title.toLowerCase().includes('undangan')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveSubTab('JADWAL_UNDANGAN')}
+                                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold rounded-md shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-amber-400/40"
+                                    title="Buka menu pembuatan Surat Undangan & Penjadwalan Pengadaan Langsung"
+                                  >
+                                    <Calendar className="w-3.5 h-3.5 text-amber-200" />
+                                    <span>📝 Buat Surat Undangan & Jadwal</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1209,7 +1263,22 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 2: MONITORING 6 TAHAPAN PROSES PENGADAAN & UPLOAD BERKAS */}
+      {/* SUB-TAB 2: PENJADWALAN PENGADAAN & FORMAT SURAT UNDANGAN RESMI */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'JADWAL_UNDANGAN' && (
+        <ProcurementScheduleInvitationView
+          procurementPackage={currentPkg}
+          onUpdatePackage={onUpdatePackageStage}
+          onNavigateToTab={(tab) => {
+            if (tab === 'CHECKLIST_TABLE' || tab === 'STAGE_WORKFLOW') {
+              setActiveSubTab(tab);
+            }
+          }}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB 3: MONITORING 6 TAHAPAN PROSES PENGADAAN & UPLOAD BERKAS */}
       {/* ========================================================================= */}
       {activeSubTab === 'STAGE_WORKFLOW' && (
         <div className="space-y-5">
@@ -1286,6 +1355,41 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
               </button>
             )}
           </div>
+
+          {/* Stage 2 Direct Document Generator Banner */}
+          {activeStageKey === 'PERMINTAAN_PENAWARAN' && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-amber-500 text-stone-950 rounded-xl shrink-0 mt-0.5 sm:mt-0 font-bold shadow-2xs">
+                  <Calendar className="w-5 h-5 text-stone-950" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-200 text-amber-900 rounded font-mono uppercase">
+                      Bagian Penjadwalan Pengadaan
+                    </span>
+                    <span className="text-xs text-stone-400 font-mono">Format Pemkab Nagekeo</span>
+                  </div>
+                  <h4 className="text-sm font-bold text-stone-900 mt-0.5">
+                    Surat Undangan Pengadaan Langsung & Penjadwalan Pelaksanaan
+                  </h4>
+                  <p className="text-xs text-stone-600 mt-0.5">
+                    Buat dan cetak surat undangan resmi lengkap dengan kop Dinas PUPR Kab. Nagekeo, rincian paket, lingkup pekerjaan, total HPS, dan tabel jadwal kegiatan.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('JADWAL_UNDANGAN')}
+                className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 shrink-0 shadow-xs cursor-pointer border border-amber-500/40"
+              >
+                <Calendar className="w-4 h-4 text-amber-200" />
+                <span>Buat Dokumen & Jadwal Sekarang</span>
+                <ChevronRight className="w-4 h-4 text-amber-200" />
+              </button>
+            </div>
+          )}
 
           {/* Main Grid Pane - Split (5/12 Checklist vs 7/12 Document Workbench) */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">

@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Building2,
   Menu,
+  Calendar,
 } from 'lucide-react';
 
 export type MainNavTab = 
@@ -23,6 +24,7 @@ export type MainNavTab =
   | 'kelola-paket'
   | 'unggah-dokumen'
   | 'tahapan-proses'
+  | 'jadwal-undangan'
   | 'pengarsipan'
   | 'review-dokumen'
   | 'penomoran-opd';
@@ -81,7 +83,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'unggah-dokumen', label: 'Unggah Dokumen', icon: UploadCloud, badge: null },
         { id: 'review-dokumen', label: 'Review Dokumen', icon: FileCheck2, badge: pendingReviewCount > 0 ? pendingReviewCount : null, highlight: true },
-        { id: 'tahapan-proses', label: 'Tahapan Proses', icon: GitMerge, badge: null },
+        { id: 'tahapan-proses', label: 'Tahapan Proses & Ceklist', icon: GitMerge, badge: null },
+        { id: 'jadwal-undangan', label: 'Penjadwalan & Undangan', icon: Calendar, badge: null },
         { id: 'pengarsipan', label: 'Pengarsipan E-Arsip', icon: Archive, badge: null },
       ],
     },
