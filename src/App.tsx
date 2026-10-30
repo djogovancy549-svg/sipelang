@@ -25,6 +25,7 @@ import { OPDNumberingView } from './components/OPDNumberingView';
 import { PackageDetailModal } from './components/PackageDetailModal';
 import { CreatePackageModal } from './components/CreatePackageModal';
 import { GoogleIntegrationModal } from './components/GoogleIntegrationModal';
+import { OfficialDocumentsArchive, DocumentRecord } from './components/OfficialDocumentsArchive';
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 
 export default function App() {
@@ -262,6 +263,15 @@ export default function App() {
     setActiveTab('review-dokumen');
   };
 
+  const handleEditDocument = (record: DocumentRecord) => {
+    setStageTrackerPackageId(record.packageId);
+    if (record.documentType === 'EVALUASI') {
+      setActiveTab('evaluasi-penawaran');
+    } else {
+      setActiveTab('jadwal-undangan');
+    }
+  };
+
   // Derive title for top breadcrumb
   const getTabTitle = (): string => {
     switch (activeTab) {
@@ -275,6 +285,10 @@ export default function App() {
         return 'Tahapan Proses (Monitoring & Ceklist)';
       case 'jadwal-undangan':
         return 'Penjadwalan Pengadaan & Surat Undangan';
+      case 'evaluasi-penawaran':
+        return 'Formulir Evaluasi Penawaran Pengadaan Langsung';
+      case 'daftar-dokumen':
+        return 'Daftar Dokumen Resmi (OPTIMA.DOK Record)';
       case 'pengarsipan':
         return 'Pengarsipan Dokumen (E-Arsip)';
       case 'review-dokumen':
@@ -282,7 +296,7 @@ export default function App() {
       case 'penomoran-opd':
         return 'Pengaturan Penomoran Otomatis OPD';
       default:
-        return 'SIPELANG Nagekeo';
+        return 'OPTIMA.DOK Nagekeo';
     }
   };
 
@@ -396,6 +410,27 @@ export default function App() {
                 onNavigateTab={(tab) => setActiveTab(tab)}
                 onOpenReviewDoc={(doc) => openReviewForDocument(doc)}
                 onUpdateDocumentReview={handleUpdateDocumentReview}
+              />
+            )}
+
+            {activeTab === 'evaluasi-penawaran' && (
+              <StageProcessView
+                packages={packages}
+                documents={documents}
+                onUpdatePackageStage={handleUpdatePackageStage}
+                selectedPackageId={stageTrackerPackageId}
+                initialSubTab="EVALUASI_PENAWARAN"
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenReviewDoc={(doc) => openReviewForDocument(doc)}
+                onUpdateDocumentReview={handleUpdateDocumentReview}
+              />
+            )}
+
+            {activeTab === 'daftar-dokumen' && (
+              <OfficialDocumentsArchive
+                packages={packages}
+                onEditDocument={handleEditDocument}
+                onShowToast={showToast}
               />
             )}
 

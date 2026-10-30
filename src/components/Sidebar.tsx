@@ -17,6 +17,7 @@ import {
   Building2,
   Menu,
   Calendar,
+  FileText,
 } from 'lucide-react';
 
 export type MainNavTab = 
@@ -25,6 +26,8 @@ export type MainNavTab =
   | 'unggah-dokumen'
   | 'tahapan-proses'
   | 'jadwal-undangan'
+  | 'evaluasi-penawaran'
+  | 'daftar-dokumen'
   | 'pengarsipan'
   | 'review-dokumen'
   | 'penomoran-opd';
@@ -85,6 +88,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'review-dokumen', label: 'Review Dokumen', icon: FileCheck2, badge: pendingReviewCount > 0 ? pendingReviewCount : null, highlight: true },
         { id: 'tahapan-proses', label: 'Tahapan Proses & Ceklist', icon: GitMerge, badge: null },
         { id: 'jadwal-undangan', label: 'Penjadwalan & Undangan', icon: Calendar, badge: null },
+        { id: 'evaluasi-penawaran', label: 'Evaluasi Penawaran', icon: FileCheck2, badge: null },
+        { id: 'daftar-dokumen', label: 'Daftar Dokumen Resmi', icon: FileText, badge: null },
         { id: 'pengarsipan', label: 'Pengarsipan E-Arsip', icon: Archive, badge: null },
       ],
     },
@@ -105,19 +110,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar Brand Header */}
       <div className="h-16 px-3.5 flex items-center justify-between border-b border-[#3a141b] overflow-hidden">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500/20 to-rose-700/30 border border-rose-400/30 flex items-center justify-center text-rose-300 font-bold shadow-xs shrink-0">
-            <Building2 className="w-5 h-5 text-rose-300" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-600/20 to-amber-600/30 border border-rose-400/30 flex items-center justify-center text-rose-300 font-bold shadow-xs shrink-0 ring-4 ring-rose-900/20">
+            <Building2 className="w-5 h-5 text-rose-400" />
           </div>
 
           {!collapsed && (
             <div className="min-w-0 animate-fade-in">
-              <div className="font-extrabold text-white text-sm tracking-tight flex items-center gap-1.5">
-                <span className="truncate">SIPELANG</span>
-                <span className="text-[9px] font-mono font-bold text-rose-200 bg-rose-900/80 px-1.5 py-0.2 rounded border border-rose-700/60 shrink-0">
-                  PBJ
+              <div className="font-black text-sm tracking-tighter flex items-center gap-1.5">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-400 to-amber-400">OPTIMA.DOK</span>
+                <span className="text-[9px] font-mono font-bold text-rose-100 bg-rose-600 px-1.5 py-0.2 rounded border border-rose-400/30 shrink-0 shadow-sm">
+                  PRO
                 </span>
               </div>
-              <div className="text-[10px] text-rose-300/70 truncate">Pengadaan Langsung Nagekeo</div>
+              <div className="text-[9px] font-bold text-rose-300/60 uppercase tracking-widest mt-0.5">Nagekeo PBJ</div>
             </div>
           )}
         </div>

@@ -18,6 +18,7 @@ import { PROCUREMENT_STAGES, getDefaultDocumentChecklist } from '../data/procure
 import { formatRupiah, getProcurementTypeLabel, formatDate } from '../utils/formatters';
 import { ReviewMatrixModal } from './ReviewMatrixModal';
 import { ProcurementScheduleInvitationView } from './ProcurementScheduleInvitationView';
+import { ProcurementEvaluationView } from './ProcurementEvaluationView';
 import { MainNavTab } from './Sidebar';
 import {
   Calendar,
@@ -53,6 +54,7 @@ import {
   Lock,
   KeyRound,
   AlertTriangle,
+  FileCheck2,
 } from 'lucide-react';
 
 interface StageProcessViewProps {
@@ -60,7 +62,7 @@ interface StageProcessViewProps {
   documents?: DocumentItem[];
   onUpdatePackageStage: (updatedPkg: ProcurementPackage) => void;
   selectedPackageId?: string;
-  initialSubTab?: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'STAGE_WORKFLOW';
+  initialSubTab?: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'STAGE_WORKFLOW';
   onNavigateTab?: (tab: MainNavTab) => void;
   onOpenReviewDoc?: (doc: DocumentItem) => void;
   onUpdateDocumentReview?: (docId: string, status: ReviewStatus, notes: string) => void;
@@ -352,10 +354,10 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
   onOpenReviewDoc,
   onUpdateDocumentReview,
 }) => {
-  // Main sub-view tab: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'STAGE_WORKFLOW'
-  const [activeSubTab, setActiveSubTab] = useState<'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'STAGE_WORKFLOW'>(
-    initialSubTab || 'CHECKLIST_TABLE'
-  );
+  // Main sub-view tab: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'STAGE_WORKFLOW'
+  const [activeSubTab, setActiveSubTab] = useState<
+    'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'STAGE_WORKFLOW'
+  >(initialSubTab || 'CHECKLIST_TABLE');
 
   useEffect(() => {
     if (initialSubTab) {
@@ -812,6 +814,26 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveSubTab('EVALUASI_PENAWARAN')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeSubTab === 'EVALUASI_PENAWARAN'
+                ? 'bg-[#701524] text-white shadow-xs'
+                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+            }`}
+          >
+            <FileCheck2 className="w-4 h-4 text-rose-300" />
+            <span>Evaluasi Penawaran (BA Evaluasi)</span>
+            <span
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                activeSubTab === 'EVALUASI_PENAWARAN' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'
+              }`}
+            >
+              Tahap 3
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveSubTab('STAGE_WORKFLOW')}
             className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeSubTab === 'STAGE_WORKFLOW'
@@ -888,7 +910,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
             </div>
 
             {/* Neatly Aligned Buttons Grid directly above table */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-0.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-0.5">
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(true)}
@@ -904,7 +926,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full px-3 py-2.5 bg-gradient-to-r from-[#701524] via-rose-800 to-[#8b1a2d] hover:from-[#59101c] hover:to-[#701524] text-white font-extrabold text-xs rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-rose-300/40 group active:scale-[0.98]"
-                title="Buka Web Unggah SIPELANG untuk unggah berkas & foto"
+                title="Buka Web Unggah Dokumen.KU untuk unggah berkas & foto"
               >
                 <UploadCloud className="w-4 h-4 text-amber-300 shrink-0 group-hover:scale-110 transition-transform" />
                 <span className="truncate">Unggah Dokumen & Foto</span>
@@ -918,7 +940,17 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                 title="Buat dokumen Surat Undangan & Penjadwalan Pengadaan Langsung (Format Resmi Pemkab Nagekeo)"
               >
                 <Calendar className="w-4 h-4 shrink-0 text-amber-200 group-hover:scale-110 transition-transform" />
-                <span className="truncate">Buat Surat Undangan & Jadwal</span>
+                <span className="truncate">Surat Undangan & Jadwal</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('EVALUASI_PENAWARAN')}
+                className="w-full px-3 py-2.5 bg-[#701524] hover:bg-[#59101c] active:bg-[#450c15] text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-rose-400/40 group"
+                title="Buat dan kelola Formulir Evaluasi Penawaran Metode Pengadaan Langsung (Administrasi, Kualifikasi, Teknis)"
+              >
+                <FileCheck2 className="w-4 h-4 shrink-0 text-rose-200 group-hover:scale-110 transition-transform" />
+                <span className="truncate">Evaluasi Penawaran</span>
               </button>
 
               <button
@@ -1125,6 +1157,18 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                                     <span>📝 Buat Surat Undangan & Jadwal</span>
                                   </button>
                                 )}
+
+                                {(item.id === 'dok-5' || item.title.toLowerCase().includes('evaluasi')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveSubTab('EVALUASI_PENAWARAN')}
+                                    className="px-2.5 py-1 bg-[#701524] hover:bg-[#59101c] text-white text-[10px] font-bold rounded-md shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-400/40"
+                                    title="Buka Formulir Evaluasi Penawaran Metode Pengadaan Langsung (Administrasi, Kualifikasi, Teknis)"
+                                  >
+                                    <FileCheck2 className="w-3.5 h-3.5 text-rose-200" />
+                                    <span>📝 Buat Formulir Evaluasi Penawaran</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1278,7 +1322,24 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 3: MONITORING 6 TAHAPAN PROSES PENGADAAN & UPLOAD BERKAS */}
+      {/* SUB-TAB 3: FORMULIR EVALUASI PENAWARAN (ADMINISTRASI, KUALIFIKASI, TEKNIS) */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'EVALUASI_PENAWARAN' && (
+        <ProcurementEvaluationView
+          procurementPackage={currentPkg}
+          onUpdatePackage={onUpdatePackageStage}
+          onNavigateToTab={(tab) => {
+            if (tab === 'CHECKLIST_TABLE' || tab === 'STAGE_WORKFLOW' || tab === 'JADWAL_UNDANGAN') {
+              setActiveSubTab(tab);
+            } else if (onNavigateTab) {
+              onNavigateTab(tab);
+            }
+          }}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB 4: MONITORING 6 TAHAPAN PROSES PENGADAAN & UPLOAD BERKAS */}
       {/* ========================================================================= */}
       {activeSubTab === 'STAGE_WORKFLOW' && (
         <div className="space-y-5">
@@ -1387,6 +1448,41 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                 <Calendar className="w-4 h-4 text-amber-200" />
                 <span>Buat Dokumen & Jadwal Sekarang</span>
                 <ChevronRight className="w-4 h-4 text-amber-200" />
+              </button>
+            </div>
+          )}
+
+          {/* Stage 3 Direct Document Generator Banner */}
+          {activeStageKey === 'EVALUASI_PENAWARAN' && (
+            <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 border border-rose-300 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-[#701524] text-white rounded-xl shrink-0 mt-0.5 sm:mt-0 font-bold shadow-2xs">
+                  <FileCheck2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-200 text-rose-900 rounded font-mono uppercase">
+                      Bagian Evaluasi Penawaran
+                    </span>
+                    <span className="text-xs text-stone-400 font-mono">Format Pemkab Nagekeo</span>
+                  </div>
+                  <h4 className="text-sm font-bold text-stone-900 mt-0.5">
+                    Formulir Evaluasi Penawaran Metode Pengadaan Langsung
+                  </h4>
+                  <p className="text-xs text-stone-600 mt-0.5">
+                    Evaluasi Administrasi, Kualifikasi Badan Usaha, dan Evaluasi Teknis resmi Dinas PUPR Kab. Nagekeo dengan sinkronisasi Google Sheet, penambahan kategori baru, dan verifikasi PIN.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveSubTab('EVALUASI_PENAWARAN')}
+                className="px-4 py-2 bg-gradient-to-r from-[#701524] to-rose-700 hover:from-[#59101c] hover:to-[#701524] text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 shrink-0 shadow-xs cursor-pointer border border-rose-500/40"
+              >
+                <FileCheck2 className="w-4 h-4 text-rose-200" />
+                <span>Buka Formulir Evaluasi Sekarang</span>
+                <ChevronRight className="w-4 h-4 text-rose-200" />
               </button>
             </div>
           )}
@@ -1621,7 +1717,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      🟢 Google Drive SIPELANG
+                      🟢 Google Drive Dokumen.KU
                     </span>
                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-stone-100 text-stone-700">
                       {previewDriveDoc.fileType?.toUpperCase() || 'PDF'}

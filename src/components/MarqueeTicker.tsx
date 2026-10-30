@@ -16,7 +16,7 @@ export const MarqueeTicker: React.FC<MarqueeTickerProps> = ({
   className = '',
 }) => {
   const defaultAnnouncements = [
-    'SIPELANG KABUPATEN NAGEKEO: Sistem Informasi Review & Monitoring Pengadaan Langsung Pemkab Nagekeo Tahun Anggaran 2026',
+    'Dokumen.KU KABUPATEN NAGEKEO: Sistem Informasi Dokumentasi & Monitoring Pengadaan Langsung Pemkab Nagekeo Tahun Anggaran 2026',
     'Selalu pastikan penelaahan KAK, kewajaran HPS, KSWP Ditjen Pajak, dan INAPROC LKPP terverifikasi valid sebelum penerbitan BAHPL',
     'Pengadaan Langsung Pengadaan Barang, Jasa Konsultansi, dan Pekerjaan Konstruksi seluruh OPD / SKPD se-Kabupaten Nagekeo',
     'Layanan Konsultasi & Pembinaan PBJ: Bagian Pengadaan Barang/Jasa Setda Kabupaten Nagekeo, Gedung Kantor Bupati di Kota Mbay',

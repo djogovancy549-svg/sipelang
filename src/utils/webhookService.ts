@@ -86,7 +86,11 @@ export async function sendWebhookPayload(
     | 'PACKAGE_ARCHIVED'
     | 'STAGE_UPDATED'
     | 'OPD_NUMBERING_UPDATED'
-    | 'MATRIX_UPDATED',
+    | 'MATRIX_UPDATED'
+    | 'EVALUATION_SAVED'
+    | 'EVALUATION_DELETED'
+    | 'SCHEDULE_SAVED'
+    | 'ALL_DATA_SYNC',
   data: Record<string, any> // Expecting a flat object
 ): Promise<{ success: boolean; message: string }> {
   const settings = getStoredIntegrationSettings();
@@ -113,11 +117,51 @@ export async function sendWebhookPayload(
 
     return {
       success: true,
-      message: `Data ${eventType} berhasil terkirim!`,
+      message: `Data ${eventType} berhasil terkirim ke Google Sheet!`,
     };
   } catch (error) {
     console.error('Webhook error:', error);
-    return { success: false, message: 'Gagal mengirim data.' };
+    return { success: false, message: 'Gagal mengirim data ke Google Sheet.' };
+  }
+}
+
+/**
+ * Recall all data from Google Sheet via Apps Script (?action=getAllData)
+ */
+export async function fetchAllDataFromSheet(
+  customWebhookUrl?: string
+): Promise<{ success: boolean; data?: any; message: string }> {
+  const settings = getStoredIntegrationSettings();
+  const url = (customWebhookUrl || settings.webhookUrl || '').trim();
+
+  if (!url) {
+    return {
+      success: false,
+      message: 'URL Webhook Google Apps Script belum dikonfigurasi.',
+    };
+  }
+
+  try {
+    const separator = url.includes('?') ? '&' : '?';
+    const requestUrl = `${url}${separator}action=getAllData&_t=${Date.now()}`;
+    const response = await fetch(requestUrl, { method: 'GET' });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}`);
+    }
+
+    const json = await response.json();
+    return {
+      success: true,
+      data: json,
+      message: 'Berhasil memanggil seluruh data dari Google Sheet!',
+    };
+  } catch (error) {
+    console.error('Error fetching all data from Google Sheet:', error);
+    return {
+      success: false,
+      message: `Gagal memanggil data dari Google Sheet: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 

@@ -71,7 +71,7 @@ export const SecurityPinModal: React.FC<SecurityPinModalProps> = ({
             <div>
               <h3 className="font-extrabold text-sm text-white tracking-wide">{title}</h3>
               <p className="text-[11px] text-rose-200/90 font-medium">
-                Dilindungi Verifikasi PIN Dinamis Harian SIPELANG PBJ
+                Dilindungi Verifikasi PIN Dinamis Harian Dokumen.KU PBJ
               </p>
             </div>
           </div>

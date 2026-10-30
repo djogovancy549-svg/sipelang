@@ -1,5 +1,5 @@
 /**
- * Utility untuk validasi PIN keamanan aksi hapus dinamis harian SIPELANG PBJ.
+ * Utility untuk validasi PIN keamanan aksi hapus dinamis harian Dokumen.KU PBJ.
  * Aturan: DDMMYY-pbj (Tanggal, Bulan, 2 digit tahun terakhir + '-pbj')
  * Contoh: Tanggal 29 Oktober 2026 -> 291026-pbj
  */

@@ -79,7 +79,7 @@ export const GoogleIntegrationModal: React.FC<GoogleIntegrationModalProps> = ({
     saveIntegrationSettings(settings);
 
     const res = await sendWebhookPayload('PACKAGE_CREATED', {
-      testMessage: 'Uji koneksi Webhook SIPELANG Nagekeo ke Google Sheet & Drive',
+      testMessage: 'Uji koneksi Webhook Dokumen.KU Nagekeo ke Google Sheet & Drive',
       timestamp: new Date().toISOString(),
       driveDocsFolderUrl: settings.driveDocsFolderUrl,
       drivePhotosFolderUrl: settings.drivePhotosFolderUrl,
@@ -109,7 +109,7 @@ export const GoogleIntegrationModal: React.FC<GoogleIntegrationModalProps> = ({
   };
 
   const codeGsContent = `// =========================================================================
-// SIPELANG NAGEKEO - GOOGLE APPS SCRIPT BACKEND (DRIVE & SPREADSHEET SYNC)
+// DOKUMEN.KU NAGEKEO - GOOGLE APPS SCRIPT BACKEND (DRIVE & SPREADSHEET SYNC)
 // =========================================================================
 
 const FOLDER_DOC_ID = '1FI_KsR6FAUuDIYs3ule8eBbnz4oUH-gh';
@@ -119,18 +119,24 @@ const TIMEZONE = 'Asia/Makassar';
 // Masukkan URL Google Spreadsheet target Anda di sini:
 var SPREADSHEET_URL = "${settings.sheetUrl || ''}"; 
 
-/**
- * 1. Menangani Permintaan GET (Browser Web App & SIPELANG API)
+ * 1. Menangani Permintaan GET (Browser Web App & DOKUMEN.KU API)
  */
 function doGet(e) {
-  // Jika SIPELANG meminta sinkronisasi file (?action=getFiles atau ?action=sync)
+  // Jika DOKUMEN.KU meminta seluruh data yang tersimpan di Google Sheet (?action=getAllData atau ?action=getEvaluations)
+  if (e && e.parameter && (e.parameter.action === 'getAllData' || e.parameter.action === 'getEvaluations')) {
+    var allData = getAllSpreadsheetData();
+    return ContentService.createTextOutput(JSON.stringify({ success: true, data: allData }))
+           .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Jika DOKUMEN.KU meminta sinkronisasi file (?action=getFiles atau ?action=sync)
   if (e && e.parameter && (e.parameter.action === 'getFiles' || e.parameter.action === 'sync')) {
     var files = listFiles();
     return ContentService.createTextOutput(JSON.stringify({ success: true, files: files }))
            .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // Jika SIPELANG meminta hapus file (?action=deleteFile&fileId=...)
+  // Jika DOKUMEN.KU meminta hapus file (?action=deleteFile&fileId=...)
   if (e && e.parameter && e.parameter.action === 'deleteFile' && e.parameter.fileId) {
     var deleteRes = deleteFile(e.parameter.fileId);
     return ContentService.createTextOutput(JSON.stringify(deleteRes))
@@ -140,7 +146,7 @@ function doGet(e) {
   // Tampilkan antarmuka Web App Upload Dokumen & Foto
   return HtmlService.createTemplateFromFile('index')
       .evaluate()
-      .setTitle('SIPELANG File Manager - Nagekeo')
+      .setTitle('Dokumen.KU File Manager - Nagekeo')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
@@ -164,7 +170,7 @@ function processForm(data) {
   var created = file.getDateCreated();
   var timeStr = Utilities.formatDate(created, TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
 
-  // CATAT KE GOOGLE SPREADSHEET AGAR SIPELANG MEMBACA DATA TERSEBUT
+  // CATAT KE GOOGLE SPREADSHEET AGAR DOKUMEN.KU MEMBACA DATA TERSEBUT
   try {
     if (SPREADSHEET_URL && SPREADSHEET_URL.trim() !== "") {
       var ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
@@ -263,7 +269,7 @@ function deleteFile(fileId) {
 }
 
 /**
- * 5. POST Webhook untuk SIPELANG (Logging Berbagai Event)
+ * 5. POST Webhook untuk DOKUMEN.KU (Logging Berbagai Event)
  */
 function doPost(e) {
   try {
@@ -328,6 +334,22 @@ function doPost(e) {
         sheet = getOrCreateSheet(ss, "MatriksReview", ["Timestamp", "Package ID", "Doc ID", "Pertanyaan", "Status", "Catatan"]);
         dataRow.push(payload.packageId, payload.docId, payload.question, payload.evaluationStatus, payload.evidenceNotes);
         break;
+      case 'EVALUATION_SAVED':
+        sheet = getOrCreateSheet(ss, "EvaluasiPenawaran", ["Timestamp", "ID Dokumen", "Nomor Formulir", "Nama Paket", "Satuan Kerja", "Pejabat Pengadaan", "Hasil", "Detail Evaluasi (Text)"]);
+        dataRow.push(payload.evaluationId || "", payload.documentNumber || "", payload.packageName || "", payload.workUnit || "", payload.officialName || "", payload.overallResult || "", payload.evaluationDetails || "-");
+        break;
+      case 'EVALUATION_DELETED':
+        sheet = getOrCreateSheet(ss, "EvaluasiPenawaran", ["Timestamp", "ID Dokumen", "Nomor Formulir", "Nama Paket", "Satuan Kerja", "Pejabat Pengadaan", "Hasil", "Detail Evaluasi (Text)"]);
+        dataRow.push("DELETED_" + (payload.evaluationId || ""), "-", payload.packageName || "", "-", "-", "-", "DIHAPUS", "Dihapus oleh Pejabat Pengadaan");
+        break;
+      case 'SCHEDULE_SAVED':
+        sheet = getOrCreateSheet(ss, "JadwalPengadaan", ["Timestamp", "Nomor Undangan", "Nama Paket", "Penyedia", "Tanggal Undangan", "Detail Jadwal (Text)", "Lingkup (Text)"]);
+        dataRow.push(payload.documentNumber || "", payload.packageName || "", payload.vendorName || "", payload.invitationDate || "", payload.scheduleDetails || "-", payload.scopeDetails || "-");
+        break;
+      case 'ALL_DATA_SYNC':
+        sheet = getOrCreateSheet(ss, "BackupSinkronisasi", ["Timestamp", "Tipe Data", "Jumlah Item", "Payload JSON"]);
+        dataRow.push(payload.syncType || "ALL", payload.itemCount || 0, JSON.stringify(payload.data || {}));
+        break;
       default:
         return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
     }
@@ -337,6 +359,82 @@ function doPost(e) {
 
   } catch (error) {
     return ContentService.createTextOutput("Error: " + error.toString()).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+/**
+ * 6. Ambil Seluruh Data Tersimpan dari Google Sheet untuk Dipanggil Kembali ke DOKUMEN.KU
+ */
+function getAllSpreadsheetData() {
+  if (!SPREADSHEET_URL || SPREADSHEET_URL.trim() === "") {
+    return { error: "SPREADSHEET_URL belum diatur" };
+  }
+  try {
+    var ss = SpreadsheetApp.openByUrl(SPREADSHEET_URL);
+    var result = {
+      packages: [],
+      evaluations: [],
+      schedules: [],
+      documents: []
+    };
+
+    // Ambil Data Evaluasi Penawaran
+    var evalSheet = ss.getSheetByName("EvaluasiPenawaran");
+    if (evalSheet && evalSheet.getLastRow() > 1) {
+      var evalRows = evalSheet.getRange(2, 1, evalSheet.getLastRow() - 1, 8).getValues();
+      result.evaluations = evalRows.map(function(r) {
+        var cats = [];
+        try { cats = JSON.parse(r[7]); } catch(e) {}
+        return {
+          timestamp: r[0],
+          id: r[1],
+          documentNumber: r[2],
+          packageName: r[3],
+          workUnit: r[4],
+          officialName: r[5],
+          overallResult: r[6],
+          categories: cats
+        };
+      });
+    }
+
+    // Ambil Data Jadwal Pengadaan
+    var schedSheet = ss.getSheetByName("JadwalPengadaan");
+    if (schedSheet && schedSheet.getLastRow() > 1) {
+      var schedRows = schedSheet.getRange(2, 1, schedSheet.getLastRow() - 1, 6).getValues();
+      result.schedules = schedRows.map(function(r) {
+        var list = [];
+        try { list = JSON.parse(r[5]); } catch(e) {}
+        return {
+          timestamp: r[0],
+          documentNumber: r[1],
+          packageName: r[2],
+          vendorName: r[3],
+          invitationDate: r[4],
+          schedules: list
+        };
+      });
+    }
+
+    // Ambil Data Paket
+    var pkgSheet = ss.getSheetByName("Paket");
+    if (pkgSheet && pkgSheet.getLastRow() > 1) {
+      var pkgRows = pkgSheet.getRange(2, 1, pkgSheet.getLastRow() - 1, 6).getValues();
+      result.packages = pkgRows.map(function(r) {
+        return {
+          timestamp: r[0],
+          name: r[1],
+          hpsValue: r[2],
+          skpdName: r[3],
+          vendorName: r[4],
+          codeRUP: r[5]
+        };
+      });
+    }
+
+    return result;
+  } catch(e) {
+    return { error: e.toString() };
   }
 }
 
@@ -360,7 +458,7 @@ function getFolderIdFromUrl(url) {
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>SIPELANG File Manager</title>
+  <title>Dokumen.KU File Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -371,8 +469,8 @@ function getFolderIdFromUrl(url) {
     <!-- Header -->
     <div class="bg-[#701524] text-white p-5 rounded-2xl shadow-lg flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-black tracking-tight">SIPELANG Nagekeo - Unggah Berkas & Foto</h1>
-        <p class="text-xs text-rose-100 mt-1">Terintegrasi otomatis ke Google Drive & Google Sheet SIPELANG</p>
+        <h1 class="text-xl font-black tracking-tight">Dokumen.KU Nagekeo - Unggah Berkas & Foto</h1>
+        <p class="text-xs text-rose-100 mt-1">Terintegrasi otomatis ke Google Drive & Google Sheet Dokumen.KU</p>
       </div>
       <i class="fa-solid fa-cloud-arrow-up text-3xl text-rose-200"></i>
     </div>
@@ -766,7 +864,7 @@ function getFolderIdFromUrl(url) {
                       onClick={handleTestSync}
                       disabled={isTestingSync}
                       className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
-                      title="Uji apakah SIPELANG bisa membaca file dari Google Drive via Apps Script"
+                      title="Uji apakah Dokumen.KU bisa membaca file dari Google Drive via Apps Script"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${isTestingSync ? 'animate-spin' : ''}`} />
                       <span>{isTestingSync ? 'Membaca...' : 'Uji Tarik File'}</span>
@@ -783,7 +881,7 @@ function getFolderIdFromUrl(url) {
                   </div>
                 </div>
                 <p className="text-[10px] text-stone-500 mt-1">
-                  URL ini digunakan untuk: (1) Menarik daftar file dari Google Drive ke SIPELANG, (2) Mengirim data paket/dokumen ke Google Sheet, dan (3) Menghapus file secara sinkron.
+                  URL ini digunakan untuk: (1) Menarik daftar file dari Google Drive ke Dokumen.KU, (2) Mengirim data paket/dokumen ke Google Sheet, and (3) Menghapus file secara sinkron.
                 </p>
               </div>
             </div>
@@ -848,7 +946,7 @@ function getFolderIdFromUrl(url) {
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
               <strong>Catatan Integrasi:</strong>
               <p>
-                Kode ini telah disesuaikan agar: (1) Saat file diunggah di web, otomatis tercatat di Google Sheet <code className="font-mono bg-white px-1 rounded">ArsipDokumen</code>, (2) SIPELANG dapat membaca seluruh berkas dari Drive secara real-time via <code className="font-mono bg-white px-1 rounded">?action=getFiles</code>, dan (3) Tombol hapus di SIPELANG langsung menghapus file di Drive.
+                Kode ini telah disesuaikan agar: (1) Saat file diunggah di web, otomatis tercatat di Google Sheet <code className="font-mono bg-white px-1 rounded">ArsipDokumen</code>, (2) Dokumen.KU dapat membaca seluruh berkas dari Drive secara real-time via <code className="font-mono bg-white px-1 rounded">?action=getFiles</code>, dan (3) Tombol hapus di Dokumen.KU langsung menghapus file di Drive.
               </p>
             </div>
 

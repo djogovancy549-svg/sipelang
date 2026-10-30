@@ -23,7 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="h-16 bg-white border-b border-rose-100/70 px-4 sm:px-6 flex items-center justify-between gap-4 shrink-0 sticky top-0 z-20">
       {/* Zone 1: Context Breadcrumb */}
       <div className="flex items-center gap-2 text-xs">
-        <span className="font-medium text-stone-500">SIPELANG</span>
+        <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-amber-500">OPTIMA.DOK</span>
         <span className="text-stone-300">/</span>
         <span className="font-semibold text-rose-950">{currentMenuTitle}</span>
         <span className="hidden sm:inline-block ml-2 text-[10px] font-mono text-[#701524] bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60">

@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ProcurementPackage, DocumentChecklistItem } from '../types/procurement';
 import { formatRupiah, formatDate } from '../utils/formatters';
+import { sendWebhookPayload } from '../utils/webhookService';
 import {
   Calendar,
   Printer,
@@ -32,6 +33,9 @@ import {
   KeyRound,
   AlertTriangle,
   X,
+  ChevronDown,
+  UserCheck,
+  Signature,
 } from 'lucide-react';
 
 export interface ScheduleItem {
@@ -77,6 +81,18 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
   // "tanda tangan bisa kah di buat template untuk menempel tanda tangan dengan pdf"
   // Default is 'TEMPLATE_OVAL' matching image_d0126f30.png with dashed oval and blue signature
   const [signatureMode, setSignatureMode] = useState<SignatureTemplateMode>('TEMPLATE_OVAL');
+  const [logoDropdownOpen, setLogoDropdownOpen] = useState(false);
+  const [sigDropdownOpen, setSigDropdownOpen] = useState(false);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setLogoDropdownOpen(false);
+      setSigDropdownOpen(false);
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
   const [customSignature, setCustomSignature] = useState<string | null>(() => {
     try {
       return localStorage.getItem('sipelang_official_signature');
@@ -311,7 +327,7 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
     setPinError('');
   };
 
-  // Save to SIPELANG and auto-fulfill Document Checklist Item #2 (Surat Undangan)
+  // Save to Dokumen.KU and auto-fulfill Document Checklist Item #2 (Surat Undangan)
   const handleSaveDocumentAndSync = () => {
     // 1. Update checklist in package
     const existingChecklist = procurementPackage.documentChecklist || [];
@@ -357,6 +373,52 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
     setSaveSuccessNotice(
       `Surat Undangan No. ${nomorSurat} berhasil disimpan! Baris #2 pada Tabel Ceklist otomatis Tercentang (√) dan Status Disetujui.`
     );
+
+    // 3. Save to Local Storage for Archive Management
+    try {
+      const scheduleRecord = {
+        id: `sch-${procurementPackage.id}-${Date.now()}`,
+        packageId: procurementPackage.id,
+        documentNumber: nomorSurat,
+        packageName: procurementPackage.name,
+        vendorName: namaPenyedia,
+        dateCreated: new Date().toISOString().slice(0, 10),
+      };
+      const allSchedules = JSON.parse(localStorage.getItem('sipelang_schedules_v1') || '[]');
+      const filtered = allSchedules.filter((s: any) => s.packageId !== procurementPackage.id);
+      localStorage.setItem('sipelang_schedules_v1', JSON.stringify([scheduleRecord, ...filtered]));
+    } catch (err) {
+      console.warn('Failed to save schedule record to local storage:', err);
+    }
+
+    // 4. Sync to Google Sheet (Formatted as Plain Text)
+    const syncToSheet = async () => {
+      const scheduleDetailsText = scheduleItems
+        .map((s: ScheduleItem, idx: number) => `${idx + 1}. ${s.activity}\n   Hari/Tgl: ${s.dateRange}\n   Waktu: ${s.timeRange}`)
+        .join('\n\n');
+
+      const scopeDetailsText = scopeItems.map((item: string, idx: number) => `${idx + 1}. ${item}`).join('\n');
+
+      const payload = {
+        action: 'SAVE_SCHEDULE',
+        documentNumber: nomorSurat,
+        packageName: procurementPackage.name,
+        vendorName: namaPenyedia,
+        invitationDate: tanggalSurat,
+        scheduleDetails: scheduleDetailsText,
+        scopeDetails: scopeDetailsText,
+        hpsValue: hpsValue,
+        fundingSource: sumberDana,
+      };
+
+      try {
+        await sendWebhookPayload('SCHEDULE_SAVED', payload);
+      } catch (err) {
+        console.warn('Failed to sync schedule to sheet:', err);
+      }
+    };
+
+    syncToSheet();
 
     setTimeout(() => {
       setSaveSuccessNotice(null);
@@ -770,116 +832,217 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
             </div>
 
             {/* Neatly Aligned Action Controls Directly Above Document */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              {/* Button 1: Logo Structure Control */}
-              <div className="relative">
-                {customLogo ? (
-                  <div className="flex items-center gap-1 w-full">
-                    <button
-                      type="button"
-                      onClick={() => logoInputRef.current?.click()}
-                      className="flex-1 px-3 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-xl border border-stone-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      title="Ganti logo instansi"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="truncate">Logo Terpasang</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRequestDeleteLogo}
-                      className="px-2 py-2 bg-stone-800 hover:bg-red-900/60 text-stone-400 hover:text-red-300 rounded-xl border border-stone-700 cursor-pointer"
-                      title="Kosongkan Logo (Dilindungi PIN)"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+            {/* Neatly Aligned Action Controls Directly Above Document */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Dropdown 1: Pengaturan Logo */}
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogoDropdownOpen(!logoDropdownOpen);
+                    setSigDropdownOpen(false);
+                  }}
+                  className={`w-full px-3 py-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 cursor-pointer shadow-sm ${
+                    customLogo 
+                      ? 'bg-emerald-900/40 border-emerald-700/50 text-emerald-100 hover:bg-emerald-900/60' 
+                      : 'bg-stone-800 border-stone-700 text-stone-200 hover:bg-stone-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    {customLogo ? (
+                      <div className="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center">
+                        <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 rounded bg-stone-700 flex items-center justify-center">
+                        <Upload className="w-3.5 h-3.5 text-amber-400" />
+                      </div>
+                    )}
+                    <span className="text-xs font-bold truncate">
+                      {customLogo ? 'Logo Terpasang' : 'Pengaturan Logo'}
+                    </span>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => logoInputRef.current?.click()}
-                    className="w-full px-3 py-2 bg-stone-800 hover:bg-stone-700 active:bg-stone-600 text-stone-200 text-xs font-bold rounded-xl border border-dashed border-stone-600 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    title="Logo saat ini dikosongkan (struktur siap). Klik untuk menaruh logo Anda"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="truncate">Taruh Logo (PNG/JPG)</span>
-                  </button>
-                )}
-              </div>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${logoDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-              {/* Button 2: Signature Template & Upload Control */}
-              <div className="relative">
-                {customSignature && signatureMode === 'UPLOADED' ? (
-                  <div className="flex items-center gap-1 w-full">
-                    <button
-                      type="button"
-                      onClick={() => sigInputRef.current?.click()}
-                      className="flex-1 px-3 py-2 bg-blue-900/60 hover:bg-blue-800 text-blue-200 text-xs font-bold rounded-xl border border-blue-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      title="Ganti berkas tanda tangan yang ditempel"
-                    >
-                      <Paperclip className="w-3.5 h-3.5 text-blue-300" />
-                      <span className="truncate">TTD Ditempel</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRequestDeleteSignature}
-                      className="px-2 py-2 bg-stone-800 hover:bg-red-900/60 text-stone-300 hover:text-red-300 rounded-xl border border-stone-700 cursor-pointer"
-                      title="Hapus Tanda Tangan (Dilindungi PIN)"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 w-full">
-                    <button
-                      type="button"
-                      onClick={() => sigInputRef.current?.click()}
-                      className="flex-1 px-3 py-2 bg-stone-800 hover:bg-stone-700 active:bg-stone-600 text-stone-200 text-xs font-bold rounded-xl border border-stone-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      title="Tempel tanda tangan dari file (PNG/JPG/PDF scan)"
-                    >
-                      <Paperclip className="w-3.5 h-3.5 text-blue-400" />
-                      <span className="truncate">Tempel TTD (PDF/Scan)</span>
-                    </button>
-                    <select
-                      value={signatureMode}
-                      onChange={(e) => {
-                        const newMode = e.target.value as SignatureTemplateMode;
-                        if (newMode === 'EMPTY' && (customSignature || signatureMode !== 'EMPTY')) {
-                          handleRequestDeleteSignature();
-                        } else {
-                          setSignatureMode(newMode);
-                        }
-                      }}
-                      className="px-2 py-2 bg-stone-800 border border-stone-700 rounded-xl text-[11px] font-bold text-amber-300 cursor-pointer focus:outline-none"
-                      title="Pilih Model Tanda Tangan"
-                    >
-                      <option value="TEMPLATE_OVAL">Template Oval</option>
-                      <option value="DIGITAL_BLUE">Paraf Biru</option>
-                      <option value="EMPTY">Kosong (Basah)</option>
-                    </select>
+                {logoDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1.5 w-full bg-stone-800 border border-stone-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="p-1.5 space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logoInputRef.current?.click();
+                          setLogoDropdownOpen(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-stone-700 rounded-lg transition-colors flex items-center gap-2 group"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-stone-100">{customLogo ? 'Ganti Logo' : 'Unggah Logo'}</span>
+                          <span className="text-[9px] text-stone-400">Pilih berkas PNG/JPG</span>
+                        </div>
+                      </button>
+                      
+                      {customLogo && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleRequestDeleteLogo();
+                            setLogoDropdownOpen(false);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-red-900/30 rounded-lg transition-colors flex items-center gap-2 group"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-400 group-hover:text-red-300" />
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-red-300">Kosongkan Logo</span>
+                            <span className="text-[9px] text-stone-500 flex items-center gap-1">
+                              <ShieldCheck className="w-2.5 h-2.5" /> Membutuhkan PIN
+                            </span>
+                          </div>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Button 3: Simpan & Sinkronkan Ceklist */}
+              {/* Dropdown 2: Otorisasi TTD */}
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSigDropdownOpen(!sigDropdownOpen);
+                    setLogoDropdownOpen(false);
+                  }}
+                  className={`w-full px-3 py-2.5 rounded-xl border transition-all flex items-center justify-between gap-2 cursor-pointer shadow-sm ${
+                    signatureMode === 'UPLOADED' && customSignature
+                      ? 'bg-blue-900/40 border-blue-700/50 text-blue-100 hover:bg-blue-900/60'
+                      : 'bg-stone-800 border-stone-700 text-stone-200 hover:bg-stone-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <div className={`w-5 h-5 rounded flex items-center justify-center ${
+                      signatureMode === 'UPLOADED' && customSignature ? 'bg-blue-500/20' : 'bg-stone-700'
+                    }`}>
+                      {signatureMode === 'UPLOADED' && customSignature ? (
+                        <Paperclip className="w-3.5 h-3.5 text-blue-400" />
+                      ) : (
+                        <Signature className="w-3.5 h-3.5 text-amber-400" />
+                      )}
+                    </div>
+                    <span className="text-xs font-bold truncate">
+                      {signatureMode === 'UPLOADED' && customSignature ? 'TTD Ditempel' : 'Otorisasi TTD'}
+                    </span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${sigDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {sigDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1.5 w-full bg-stone-800 border border-stone-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="p-1.5 space-y-1">
+                      {/* Section Title */}
+                      <div className="px-2 py-1 mb-1 border-b border-stone-700/50">
+                        <span className="text-[9px] font-bold text-stone-500 uppercase tracking-wider">Metode TTD</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sigInputRef.current?.click();
+                          setSigDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left rounded-lg transition-colors flex items-center gap-2 ${
+                          signatureMode === 'UPLOADED' ? 'bg-blue-900/30' : 'hover:bg-stone-700'
+                        }`}
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-blue-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-stone-100">Tempel TTD (PDF/Scan)</span>
+                          <span className="text-[9px] text-stone-400">Format PNG/JPG transparan</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSignatureMode('TEMPLATE_OVAL');
+                          setSigDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left rounded-lg transition-colors flex items-center gap-2 ${
+                          signatureMode === 'TEMPLATE_OVAL' ? 'bg-amber-900/30' : 'hover:bg-stone-700'
+                        }`}
+                      >
+                        <div className="w-3.5 h-3.5 rounded-full border-2 border-amber-500/50" />
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-stone-100">Template Oval</span>
+                          <span className="text-[9px] text-stone-400">Cap & TTD standar OPTIMA</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSignatureMode('DIGITAL_BLUE');
+                          setSigDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left rounded-lg transition-colors flex items-center gap-2 ${
+                          signatureMode === 'DIGITAL_BLUE' ? 'bg-blue-600/20' : 'hover:bg-stone-700'
+                        }`}
+                      >
+                        <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-stone-100">Digital Biru</span>
+                          <span className="text-[9px] text-stone-400">Paraf digital warna biru</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customSignature || signatureMode !== 'EMPTY') {
+                            handleRequestDeleteSignature();
+                          } else {
+                            setSignatureMode('EMPTY');
+                          }
+                          setSigDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left rounded-lg transition-colors flex items-center gap-2 ${
+                          signatureMode === 'EMPTY' ? 'bg-stone-700' : 'hover:bg-red-900/30'
+                        }`}
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-stone-400" />
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-stone-100">Dikosongkan (Basah)</span>
+                          <span className="text-[9px] text-stone-500 flex items-center gap-1">
+                            <ShieldCheck className="w-2.5 h-2.5" /> Membutuhkan PIN
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action 1: Simpan & Sinkronkan */}
               <button
                 type="button"
                 onClick={handleSaveDocumentAndSync}
-                className="w-full px-3 py-2 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer border border-emerald-500/30"
+                className="w-full px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer border border-emerald-500/30"
                 title="Simpan dokumen & otomatis centang (√) baris Dokumen #2 pada Formulir Ceklist"
               >
                 <Save className="w-4 h-4 text-emerald-200" />
-                <span className="truncate">Simpan & Sinkron Ceklist</span>
+                <span className="truncate">Simpan & Sinkron</span>
               </button>
 
-              {/* Button 4: Cetak Dokumen Resmi PDF */}
+              {/* Action 2: Cetak Dokumen Resmi PDF */}
               <button
                 type="button"
                 onClick={handlePrint}
-                className="w-full px-3 py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-950 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer border border-amber-300"
+                className="w-full px-3 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-stone-950 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer border border-amber-300"
                 title="Cetak format A4 resmi atau simpan sebagai PDF"
               >
                 <Printer className="w-4 h-4 text-stone-950" />
-                <span className="truncate">Cetak Dokumen (PDF)</span>
+                <span className="truncate">Cetak Dokumen</span>
               </button>
             </div>
           </div>

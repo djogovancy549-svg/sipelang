@@ -253,7 +253,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-sm sm:text-base font-extrabold text-stone-900 tracking-tight">
-                Dashboard SIPELANG Nagekeo
+                Dashboard OPTIMA.DOK Nagekeo
               </h1>
               <span className="text-[10px] font-bold text-[#701524] bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
                 TA 2026 • Perpres 12/2021

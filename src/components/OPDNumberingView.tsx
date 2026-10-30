@@ -173,7 +173,7 @@ export const OPDNumberingView: React.FC<OPDNumberingViewProps> = ({
         title="Hapus Buku Registrasi OPD"
         itemName={deleteConfirmName}
         itemTypeLabel="Buku Register OPD"
-        warningNote="Seluruh format rumus penomoran dan counter dokumen untuk OPD ini akan dihapus dari sistem SIPELANG."
+        warningNote="Seluruh format rumus penomoran dan counter dokumen untuk OPD ini akan dihapus dari sistem Dokumen.KU."
         onConfirm={confirmDeleteAction}
         onClose={() => {
           setDeleteConfirmId(null);

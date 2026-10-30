@@ -181,7 +181,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
         onDocumentsSynced(newItems);
       }
       setLastSyncedTime(new Date().toLocaleTimeString('id-ID'));
-      showToast(`Berhasil membaca & menyinkronkan ${newItems.length} file dari Google Drive ke SIPELANG!`, 'success');
+      showToast(`Berhasil membaca & menyinkronkan ${newItems.length} file dari Google Drive ke Dokumen.KU!`, 'success');
     } catch (err) {
       console.error(err);
       showToast('Gagal menarik file dari Google Drive. Pastikan URL Webhook sudah benar.', 'error');
@@ -202,7 +202,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
       if (onDeleteDocument) {
         onDeleteDocument(deleteConfirmDoc.id, deleteConfirmDoc.driveFileId);
       }
-      showToast(`Berkas "${deleteConfirmDoc.title}" berhasil dihapus dari SIPELANG dan Drive!`, 'success');
+      showToast(`Berkas "${deleteConfirmDoc.title}" berhasil dihapus dari Dokumen.KU dan Drive!`, 'success');
     } catch (err) {
       console.error(err);
       showToast('Gagal menghapus file.', 'error');
@@ -429,7 +429,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-rose-100 text-[#701524] uppercase border border-rose-200">
-                  SIPELANG Nagekeo
+                  Dokumen.KU Nagekeo
                 </span>
                 <span className="text-xs font-semibold text-stone-500">
                   E-Pengadaan Langsung TA 2026
@@ -463,7 +463,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
               onClick={handleSyncFromDrive}
               disabled={isSyncing}
               className="w-full sm:w-auto px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-              title="Baca data file dokumen & foto dari Google Drive Apps Script ke SIPELANG"
+              title="Baca data file dokumen & foto dari Google Drive Apps Script ke Dokumen.KU"
             >
               <RefreshCw className={`w-4 h-4 text-emerald-200 ${isSyncing ? 'animate-spin' : ''}`} />
               <span>{isSyncing ? 'MEMBACA DARI DRIVE...' : 'TARIK DATA DARI DRIVE'}</span>
@@ -721,7 +721,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
                         <button
                           onClick={() => setDeleteConfirmDoc(doc)}
                           className="p-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
-                          title="Hapus Berkas (SIPELANG & Drive)"
+                          title="Hapus Berkas (Dokumen.KU & Drive)"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -860,7 +860,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
                         <button
                           onClick={() => setDeleteConfirmDoc(doc)}
                           className="p-1.5 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
-                          title="Hapus Foto Kegiatan (SIPELANG & Drive)"
+                          title="Hapus Foto Kegiatan (Dokumen.KU & Drive)"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -912,7 +912,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
                 className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan ke SIPELANG'}</span>
+                <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan ke Dokumen.KU'}</span>
               </button>
 
               {onOpenGoogleSettings && (
@@ -992,7 +992,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
               <div className="border border-stone-200 rounded-2xl overflow-hidden bg-stone-50 shadow-inner h-[600px]">
                 <iframe
                   src={integrationSettings.webhookUrl}
-                  title="SIPELANG Apps Script File Manager"
+                  title="Dokumen.KU Apps Script File Manager"
                   className="w-full h-full border-0"
                 />
               </div>
@@ -1515,13 +1515,13 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
       {/* 7. DELETE CONFIRMATION WITH DAILY PIN */}
       <SecurityPinModal
         isOpen={!!deleteConfirmDoc}
-        title="Hapus Berkas dari SIPELANG & Drive"
+        title="Hapus Berkas dari Dokumen.KU & Drive"
         itemName={deleteConfirmDoc?.title}
         itemTypeLabel={deleteConfirmDoc?.category === 'DOKUMENTASI_FOTO' ? 'Dokumentasi Foto' : 'Berkas Dokumen'}
         warningNote={
           deleteConfirmDoc?.driveFileId
             ? 'File ini terhubung dengan Google Drive. Menghapus berkas ini akan memindahkannya ke Trash di Google Drive dan menghapus catatan log dari Google Sheet.'
-            : 'Berkas ini akan dihapus dari daftar dokumen SIPELANG.'
+            : 'Berkas ini akan dihapus dari daftar dokumen Dokumen.KU.'
         }
         isProcessing={isDeleting}
         onConfirm={handleExecuteDelete}
