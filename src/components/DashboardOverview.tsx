@@ -57,7 +57,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<ProcurementType | 'ALL'>('ALL');
   const [selectedSkpdFilter, setSelectedSkpdFilter] = useState<string | null>(null);
-  const [selectedKpiFilter, setSelectedKpiFilter] = useState<'ALL' | 'PENDING_REVIEW' | 'EFFICIENT' | 'ARCHIVED'>('ALL');
+  const [selectedKpiFilter, setSelectedKpiFilter] = useState<
+    'ALL' | 'REVIEWED' | 'IN_REVIEW' | 'READY_PROCUREMENT' | 'ARCHIVED'
+  >('ALL');
   const [sortBy, setSortBy] = useState<'RECENT' | 'HPS_DESC' | 'PROGRESS_DESC' | 'NAME'>('RECENT');
 
   // Analytics Chart State
@@ -78,14 +80,37 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     0
   );
 
+  // Document Review Metrics for KPIs
   const pendingDocuments = documents.filter((d) => d.reviewStatus === 'MENUNGGU_REVIEW');
   const approvedDocuments = documents.filter((d) => d.reviewStatus === 'DISETUJUI');
   const revisionDocuments = documents.filter((d) => d.reviewStatus === 'PERLU_PERBAIKAN');
+  const reviewedDocuments = documents.filter(
+    (d) => d.reviewStatus === 'DISETUJUI' || d.reviewStatus === 'PERLU_PERBAIKAN'
+  );
+
+  // Packages with reviewed docs
+  const packageIdsWithReviewedDocs = useMemo(() => {
+    return new Set(reviewedDocuments.map((d) => d.packageId));
+  }, [reviewedDocuments]);
 
   // Packages with pending review docs
   const packageIdsWithPendingReview = useMemo(() => {
     return new Set(pendingDocuments.map((d) => d.packageId));
   }, [pendingDocuments]);
+
+  // Packages ready for procurement (Sudah direview & disetujui, siap proses pengadaan langsung)
+  const packageIdsReadyProcurement = useMemo(() => {
+    const readyIds = new Set<string>();
+    packages.forEach((pkg) => {
+      const pkgDocs = documents.filter((d) => d.packageId === pkg.id);
+      const hasApprovedDoc = pkgDocs.some((d) => d.reviewStatus === 'DISETUJUI');
+      const isStageReady = pkg.stages?.PERSIAPAN_PPK?.status === 'completed' || pkg.overallProgress >= 20;
+      if ((hasApprovedDoc || isStageReady) && !pkg.isArchived) {
+        readyIds.add(pkg.id);
+      }
+    });
+    return readyIds;
+  }, [packages, documents]);
 
   // Breakdown by type
   const barangPackages = packages.filter((p) => p.procurementType === 'BARANG');
@@ -107,10 +132,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
       // KPI Filter
       let matchesKpi = true;
-      if (selectedKpiFilter === 'PENDING_REVIEW') {
+      if (selectedKpiFilter === 'REVIEWED') {
+        matchesKpi = packageIdsWithReviewedDocs.has(pkg.id);
+      } else if (selectedKpiFilter === 'IN_REVIEW') {
         matchesKpi = packageIdsWithPendingReview.has(pkg.id);
-      } else if (selectedKpiFilter === 'EFFICIENT') {
-        matchesKpi = Boolean(pkg.negotiationValue && pkg.negotiationValue < pkg.hpsValue);
+      } else if (selectedKpiFilter === 'READY_PROCUREMENT') {
+        matchesKpi = packageIdsReadyProcurement.has(pkg.id);
       } else if (selectedKpiFilter === 'ARCHIVED') {
         matchesKpi = pkg.isArchived;
       }
@@ -288,42 +315,47 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
         </div>
 
-        {/* KPI 2: Total Nilai HPS */}
+        {/* KPI 2: Dokumen yang Telah Di-review (Menggantikan Total Nilai HPS) */}
         <div
-          onClick={() => setSortBy(sortBy === 'HPS_DESC' ? 'RECENT' : 'HPS_DESC')}
+          onClick={() => setSelectedKpiFilter(selectedKpiFilter === 'REVIEWED' ? 'ALL' : 'REVIEWED')}
           className={`cursor-pointer bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/30 border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all relative overflow-hidden group ${
-            sortBy === 'HPS_DESC' ? 'border-emerald-600 ring-2 ring-emerald-600' : 'border-emerald-200/90'
+            selectedKpiFilter === 'REVIEWED' ? 'border-emerald-600 ring-2 ring-emerald-600' : 'border-emerald-200/90'
           }`}
+          title="Klik untuk memfilter paket dengan dokumen yang telah selesai direview"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider group-hover:underline">
-              Total Nilai HPS Paket
+              Dokumen Telah Di-review
             </span>
             <div className="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
-              <FileText className="w-4 h-4" />
+              <FileCheck2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-lg sm:text-xl font-black font-mono tabular-nums text-emerald-950 truncate">
-              {formatRupiah(totalHps)}
-            </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-black font-mono tabular-nums text-emerald-950">
+              {reviewedDocuments.length}
+            </span>
+            <span className="text-xs font-bold text-stone-500">berkas telaah</span>
           </div>
           <div className="mt-3 pt-2.5 border-t border-emerald-100 flex items-center justify-between text-xs text-stone-600">
-            <span>Total Pagu DPA:</span>
-            <span className="font-mono font-bold text-emerald-900">{formatRupiah(totalPagu)}</span>
+            <span className="font-semibold text-emerald-900">{approvedDocuments.length} Disetujui</span>
+            <span className="font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+              {revisionDocuments.length} perbaikan
+            </span>
           </div>
         </div>
 
-        {/* KPI 3: Dokumen Perlu Review */}
+        {/* KPI 3: Dokumen dalam Proses Review */}
         <div
-          onClick={() => setSelectedKpiFilter(selectedKpiFilter === 'PENDING_REVIEW' ? 'ALL' : 'PENDING_REVIEW')}
+          onClick={() => setSelectedKpiFilter(selectedKpiFilter === 'IN_REVIEW' ? 'ALL' : 'IN_REVIEW')}
           className={`cursor-pointer bg-gradient-to-br from-amber-50/80 via-white to-amber-50/30 border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all relative overflow-hidden group ${
-            selectedKpiFilter === 'PENDING_REVIEW' ? 'border-amber-600 ring-2 ring-amber-600' : 'border-amber-200/90'
+            selectedKpiFilter === 'IN_REVIEW' ? 'border-amber-600 ring-2 ring-amber-600' : 'border-amber-200/90'
           }`}
+          title="Klik untuk memfilter paket dengan dokumen dalam proses review"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-900 uppercase tracking-wider group-hover:underline">
-              Dokumen Perlu Review
+              Dokumen Dalam Proses Review
             </span>
             <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
               <Clock className="w-4 h-4" />
@@ -336,37 +368,39 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             <span className="text-xs font-bold text-stone-500">berkas antrean</span>
           </div>
           <div className="mt-3 pt-2.5 border-t border-amber-100 flex items-center justify-between text-xs">
-            <span className="text-stone-600 font-medium">Status Review:</span>
+            <span className="text-stone-600 font-medium">Status:</span>
             <span className="font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md">
-              {selectedKpiFilter === 'PENDING_REVIEW' ? 'Filtered: Perlu Review' : 'Klik Filter Antrean'}
+              {selectedKpiFilter === 'IN_REVIEW' ? 'Filtered: Proses Review' : 'Menunggu Telaah'}
             </span>
           </div>
         </div>
 
-        {/* KPI 4: Efisiensi Negosiasi Harga */}
+        {/* KPI 4: Sudah Di-review Siap Proses Pengadaan (Kartu Baru Ditambahkan!) */}
         <div
-          onClick={() => setSelectedKpiFilter(selectedKpiFilter === 'EFFICIENT' ? 'ALL' : 'EFFICIENT')}
+          onClick={() => setSelectedKpiFilter(selectedKpiFilter === 'READY_PROCUREMENT' ? 'ALL' : 'READY_PROCUREMENT')}
           className={`cursor-pointer bg-gradient-to-br from-indigo-50/80 via-white to-indigo-50/30 border rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all relative overflow-hidden group ${
-            selectedKpiFilter === 'EFFICIENT' ? 'border-indigo-600 ring-2 ring-indigo-600' : 'border-indigo-200/90'
+            selectedKpiFilter === 'READY_PROCUREMENT' ? 'border-indigo-600 ring-2 ring-indigo-600' : 'border-indigo-200/90'
           }`}
+          title="Klik untuk memfilter paket yang sudah direview dan siap proses pengadaan"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-indigo-900 uppercase tracking-wider group-hover:underline">
-              Efisiensi Anggaran APBD
+              Siap Proses Pengadaan
             </span>
             <div className="w-8 h-8 rounded-xl bg-indigo-700 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform">
-              <TrendingDown className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-lg sm:text-xl font-black font-mono tabular-nums text-indigo-950 truncate">
-              {formatRupiah(totalSavings)}
-            </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-black font-mono tabular-nums text-indigo-950">
+              {approvedDocuments.length}
+            </span>
+            <span className="text-xs font-bold text-stone-500">berkas sah ({packageIdsReadyProcurement.size} paket)</span>
           </div>
           <div className="mt-3 pt-2.5 border-t border-indigo-100 flex items-center justify-between text-xs text-stone-600">
-            <span>Penghematan:</span>
+            <span className="font-semibold text-indigo-900">Status Disetujui</span>
             <span className="font-mono font-bold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded-md">
-              {totalHps > 0 ? ((totalSavings / totalHps) * 100).toFixed(1) : 0}% dari HPS
+              Siap Undangan / SPK
             </span>
           </div>
         </div>
@@ -503,7 +537,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                   )}
                   {selectedKpiFilter !== 'ALL' && (
                     <span className="bg-rose-100 border border-rose-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      Kategori: {selectedKpiFilter}
+                      Kategori:{' '}
+                      {selectedKpiFilter === 'REVIEWED'
+                        ? 'Dokumen Telah Di-review'
+                        : selectedKpiFilter === 'IN_REVIEW'
+                        ? 'Dokumen Dalam Proses Review'
+                        : selectedKpiFilter === 'READY_PROCUREMENT'
+                        ? 'Siap Proses Pengadaan'
+                        : selectedKpiFilter === 'ARCHIVED'
+                        ? 'Paket Arsip'
+                        : selectedKpiFilter}
                       <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedKpiFilter('ALL')} />
                     </span>
                   )}

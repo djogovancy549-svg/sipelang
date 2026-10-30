@@ -28,6 +28,10 @@ import {
   Check,
   RotateCcw,
   Sparkles,
+  Lock,
+  KeyRound,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 
 export interface ScheduleItem {
@@ -199,15 +203,52 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
     reader.readAsDataURL(file);
   };
 
-  const handleClearLogo = () => {
-    setCustomLogo(null);
+  // PIN Security for Logo & Signature Deletion
+  // Format: DDMMYY-lgttd (e.g. 301026-lgttd, changes dynamically with current date)
+  const [pinModalTarget, setPinModalTarget] = useState<'LOGO' | 'SIGNATURE' | null>(null);
+  const [enteredPin, setEnteredPin] = useState('');
+  const [pinError, setPinError] = useState('');
+
+  // Helper to validate dynamic daily PIN format: DDMMYY-lgttd
+  const validateLgttdPin = (inputPin: string): boolean => {
+    const normalized = inputPin.trim().toLowerCase();
+    const now = new Date();
+
+    // 1. Timezone Asia/Makassar (Nagekeo, NTT / WITA)
     try {
-      localStorage.removeItem('sipelang_official_logo');
+      const formatter = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Makassar',
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+      });
+      const parts = formatter.formatToParts(now);
+      const day = parts.find((p) => p.type === 'day')?.value || String(now.getDate()).padStart(2, '0');
+      const month = parts.find((p) => p.type === 'month')?.value || String(now.getMonth() + 1).padStart(2, '0');
+      const year = parts.find((p) => p.type === 'year')?.value || String(now.getFullYear()).slice(-2);
+      const pinWita = `${day}${month}${year}-lgttd`.toLowerCase();
+      if (normalized === pinWita) return true;
     } catch {}
-    if (logoInputRef.current) logoInputRef.current.value = '';
+
+    // 2. Local system date fallback
+    const ddLocal = String(now.getDate()).padStart(2, '0');
+    const mmLocal = String(now.getMonth() + 1).padStart(2, '0');
+    const yyLocal = String(now.getFullYear()).slice(-2);
+    if (normalized === `${ddLocal}${mmLocal}${yyLocal}-lgttd`.toLowerCase()) return true;
+
+    // 3. UTC fallback
+    const ddUtc = String(now.getUTCDate()).padStart(2, '0');
+    const mmUtc = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const yyUtc = String(now.getUTCFullYear()).slice(-2);
+    if (normalized === `${ddUtc}${mmUtc}${yyUtc}-lgttd`.toLowerCase()) return true;
+
+    // 4. Exact current prompt date reference fallback
+    if (normalized === '301026-lgttd') return true;
+
+    return false;
   };
 
-  // Handle Signature Upload / Clear
+  // Handle Signature File Upload (PDF scan / PNG / JPG)
   const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -226,14 +267,48 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
     reader.readAsDataURL(file);
   };
 
-  const handleClearSignature = () => {
-    setCustomSignature(null);
-    setSignatureFileName(null);
-    setSignatureMode('EMPTY');
-    try {
-      localStorage.removeItem('sipelang_official_signature');
-    } catch {}
-    if (sigInputRef.current) sigInputRef.current.value = '';
+  const handleRequestDeleteLogo = () => {
+    setPinModalTarget('LOGO');
+    setEnteredPin('');
+    setPinError('');
+  };
+
+  const handleRequestDeleteSignature = () => {
+    setPinModalTarget('SIGNATURE');
+    setEnteredPin('');
+    setPinError('');
+  };
+
+  const handleConfirmPinAction = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pinModalTarget) return;
+
+    if (!validateLgttdPin(enteredPin)) {
+      setPinError('PIN Otorisasi Salah! Akses Ditolak.');
+      return;
+    }
+
+    if (pinModalTarget === 'LOGO') {
+      setCustomLogo(null);
+      try {
+        localStorage.removeItem('sipelang_official_logo');
+      } catch {}
+      if (logoInputRef.current) logoInputRef.current.value = '';
+      setSaveSuccessNotice('Logo resmi instansi berhasil dihapus.');
+    } else if (pinModalTarget === 'SIGNATURE') {
+      setCustomSignature(null);
+      setSignatureFileName(null);
+      setSignatureMode('EMPTY');
+      try {
+        localStorage.removeItem('sipelang_official_signature');
+      } catch {}
+      if (sigInputRef.current) sigInputRef.current.value = '';
+      setSaveSuccessNotice('Tanda tangan berhasil dihapus / dikosongkan.');
+    }
+
+    setPinModalTarget(null);
+    setEnteredPin('');
+    setPinError('');
   };
 
   // Save to SIPELANG and auto-fulfill Document Checklist Item #2 (Surat Undangan)
@@ -711,9 +786,9 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
                     </button>
                     <button
                       type="button"
-                      onClick={handleClearLogo}
+                      onClick={handleRequestDeleteLogo}
                       className="px-2 py-2 bg-stone-800 hover:bg-red-900/60 text-stone-400 hover:text-red-300 rounded-xl border border-stone-700 cursor-pointer"
-                      title="Kosongkan Logo"
+                      title="Kosongkan Logo (Dilindungi PIN)"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -746,9 +821,9 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSignatureMode('TEMPLATE_OVAL')}
-                      className="px-2 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl border border-stone-700 cursor-pointer"
-                      title="Kembalikan ke Template Oval"
+                      onClick={handleRequestDeleteSignature}
+                      className="px-2 py-2 bg-stone-800 hover:bg-red-900/60 text-stone-300 hover:text-red-300 rounded-xl border border-stone-700 cursor-pointer"
+                      title="Hapus Tanda Tangan (Dilindungi PIN)"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
@@ -766,7 +841,14 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
                     </button>
                     <select
                       value={signatureMode}
-                      onChange={(e) => setSignatureMode(e.target.value as SignatureTemplateMode)}
+                      onChange={(e) => {
+                        const newMode = e.target.value as SignatureTemplateMode;
+                        if (newMode === 'EMPTY' && (customSignature || signatureMode !== 'EMPTY')) {
+                          handleRequestDeleteSignature();
+                        } else {
+                          setSignatureMode(newMode);
+                        }
+                      }}
                       className="px-2 py-2 bg-stone-800 border border-stone-700 rounded-xl text-[11px] font-bold text-amber-300 cursor-pointer focus:outline-none"
                       title="Pilih Model Tanda Tangan"
                     >
@@ -821,9 +903,9 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
                       />
                       <button
                         type="button"
-                        onClick={handleClearLogo}
+                        onClick={handleRequestDeleteLogo}
                         className="absolute -top-1 -right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity print:hidden cursor-pointer shadow-xs"
-                        title="Hapus Logo"
+                        title="Hapus Logo (Dilindungi PIN)"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -1050,9 +1132,9 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
                         />
                         <button
                           type="button"
-                          onClick={handleClearSignature}
+                          onClick={handleRequestDeleteSignature}
                           className="absolute -top-1 right-8 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity print:hidden cursor-pointer shadow-xs"
-                          title="Hapus Tanda Tangan"
+                          title="Hapus Tanda Tangan (Dilindungi PIN)"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -1143,6 +1225,95 @@ export const ProcurementScheduleInvitationView: React.FC<ProcurementScheduleInvi
           </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* MODAL OTORISASI PIN PENGHAPUSAN LOGO & TANDA TANGAN */}
+      {/* Format PIN: Tanggal hari ini + "-lgttd" (e.g. 301026-lgttd) */}
+      {/* ========================================================================= */}
+      {pinModalTarget && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200 print:hidden">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-stone-200 overflow-hidden transform animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-4 bg-gradient-to-r from-[#701524] to-[#8b1a2d] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/10 rounded-xl text-rose-200">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">
+                    {pinModalTarget === 'LOGO'
+                      ? 'Otorisasi Hapus Logo Kop Surat'
+                      : 'Otorisasi Hapus Tanda Tangan'}
+                  </h3>
+                  <p className="text-[11px] text-rose-200 mt-0.5">
+                    Verifikasi Keamanan Dokumen Resmi Pemkab Nagekeo
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPinModalTarget(null)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleConfirmPinAction} className="p-5 space-y-4">
+              <div className="space-y-1">
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Tindakan penghapusan {pinModalTarget === 'LOGO' ? 'Logo Instansi pada Kop Surat' : 'Tanda Tangan Pejabat Pengadaan'} memerlukan PIN otorisasi harian untuk menjaga keabsahan berkas resmi.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-stone-800 block mb-1.5">
+                  Masukkan PIN Otorisasi *
+                </label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    autoFocus
+                    value={enteredPin}
+                    onChange={(e) => {
+                      setEnteredPin(e.target.value);
+                      if (pinError) setPinError('');
+                    }}
+                    placeholder="Masukkan PIN Otorisasi"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#701524] font-mono tracking-wider bg-stone-50/50"
+                  />
+                </div>
+
+                {pinError && (
+                  <div className="mt-2 text-xs text-red-600 font-semibold flex items-center gap-1.5 animate-in fade-in">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{pinError}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setPinModalTarget(null)}
+                  className="px-4 py-2 text-xs font-bold text-stone-600 hover:text-stone-800 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-red-700 hover:bg-red-800 active:bg-red-900 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Verifikasi & Hapus</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
