@@ -931,7 +931,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
               </button>
 
               <a
-                href="https://unggahsipelang.pages.dev"
+                href="https://unggahsipelang.pages.dev/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full px-3 py-2.5 bg-gradient-to-r from-[#701524] via-rose-800 to-[#8b1a2d] hover:from-[#59101c] hover:to-[#701524] text-white font-extrabold text-xs rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer border border-rose-300/40 group active:scale-[0.98]"
@@ -1071,7 +1071,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                                   </span>
 
                                   <a
-                                    href="https://unggahsipelang.pages.dev"
+                                    href="https://unggahsipelang.pages.dev/"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-[10px] font-extrabold text-[#701524] hover:text-[#500f1a] inline-flex items-center gap-1 bg-gradient-to-r from-rose-50 to-amber-50 hover:from-rose-100 hover:to-amber-100 px-2 py-0.8 rounded-lg border border-rose-200/90 shadow-2xs shrink-0 transition-all cursor-pointer group"

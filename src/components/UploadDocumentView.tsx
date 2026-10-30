@@ -447,7 +447,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
           <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto shrink-0 flex-wrap">
             {/* Single Unified Upload Button pointing to the Apps Script Link */}
             <a
-              href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                            href="https://unggahsipelang.pages.dev/"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-5 py-2.5 bg-[#701524] hover:bg-[#58101c] text-white font-extrabold text-xs rounded-2xl transition-all shadow-md shadow-[#701524]/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 group"
@@ -756,7 +756,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
 
             <div className="flex items-center gap-2">
               <a
-                href="https://script.google.com/macros/s/AKfycbwxcZPZWk5LNJf-l2k3Qjeq_IUQ-zqGxJrbDQt9x5i0PxX6PrIF7VJU-QNUAMro_hgdIw/exec"
+                                href="https://unggahsipelang.pages.dev/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-indigo-900 hover:bg-indigo-950 text-white text-xs font-extrabold rounded-xl transition-all flex items-center gap-2 shadow-sm cursor-pointer"
@@ -897,7 +897,7 @@ export const UploadDocumentView: React.FC<UploadDocumentViewProps> = ({
 
             <div className="flex items-center gap-2 flex-wrap">
               <a
-                href="https://unggahsipelang.pages.dev"
+                href="https://unggahsipelang.pages.dev/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2 shadow-xs cursor-pointer"
