@@ -9,6 +9,6 @@
        "not_found_handling": "single-page-application"
      },
      "vars": {
-       "AUTH_GAS_URL": "TEMPEL_URL_EXEC_AUTH_GATEWAY_DI_SINI"
+       "AUTH_GAS_URL": "https://script.google.com/macros/s/AKfycbyGOdRcBicCejHEdnOmOdM2647KVp9quMrwR-ZWKH1XkHVc-rM0z4G0xu5H3_YR1G3X/exec"
      }
    }
