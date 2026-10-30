@@ -18,6 +18,8 @@ import {
   Menu,
   Calendar,
   FileText,
+  UserCheck,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 export type MainNavTab = 
@@ -27,6 +29,9 @@ export type MainNavTab =
   | 'tahapan-proses'
   | 'jadwal-undangan'
   | 'evaluasi-penawaran'
+  | 'negosiasi-harga'
+  | 'daftar-hadir'
+  | 'dokumentasi-foto'
   | 'daftar-dokumen'
   | 'pengarsipan'
   | 'review-dokumen'
@@ -89,6 +94,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'tahapan-proses', label: 'Tahapan Proses & Ceklist', icon: GitMerge, badge: null },
         { id: 'jadwal-undangan', label: 'Penjadwalan & Undangan', icon: Calendar, badge: null },
         { id: 'evaluasi-penawaran', label: 'Evaluasi Penawaran', icon: FileCheck2, badge: null },
+        { id: 'negosiasi-harga', label: 'Negosiasi Harga', icon: Sliders, badge: null },
+        { id: 'daftar-hadir', label: 'Daftar Hadir', icon: UserCheck, badge: null },
+        { id: 'dokumentasi-foto', label: 'Dokumentasi Foto', icon: ImageIcon, badge: null },
         { id: 'daftar-dokumen', label: 'Daftar Dokumen Resmi', icon: FileText, badge: null },
         { id: 'pengarsipan', label: 'Pengarsipan E-Arsip', icon: Archive, badge: null },
       ],

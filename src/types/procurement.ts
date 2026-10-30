@@ -103,6 +103,7 @@ export interface ProcurementPackage {
   vendorNpwp: string;
   ppkName: string; // Pejabat Pembuat Komitmen
   ppName: string; // Pejabat Pengadaan
+  ppAddress?: string; // Alamat Pejabat Pengadaan (Dinamis)
   location: string;
   executionDurationDays: number;
   createdDate: string;

@@ -54,11 +54,12 @@ export const CreatePackageModal: React.FC<CreatePackageModalProps> = ({
   const [hpsValue, setHpsValue] = useState<number>(142500000);
   const [vendorName, setVendorName] = useState('');
   const [vendorNpwp, setVendorNpwp] = useState('');
-  const [ppkName, setPpkName] = useState('Drs. Agus Hidayat, M.M. (PPK)');
-  const [ppName, setPpName] = useState('Bambang Pratama, S.Kom. (PP)');
-  const [location, setLocation] = useState('Kabupaten Nagekeo, Flores - NTT');
+  const [ppkName, setPpkName] = useState('');
+  const [ppName, setPpName] = useState('');
+  const [ppAddress, setPpAddress] = useState('');
+  const [location, setLocation] = useState('');
   const [executionDurationDays, setExecutionDurationDays] = useState<number>(30);
-  const [deadlineDate, setDeadlineDate] = useState('2026-11-30');
+  const [deadlineDate, setDeadlineDate] = useState('');
   const [notes, setNotes] = useState('');
 
   if (!isOpen) return null;
@@ -117,6 +118,7 @@ export const CreatePackageModal: React.FC<CreatePackageModalProps> = ({
       vendorNpwp: vendorNpwp.trim() || '00.000.000.0-000.000',
       ppkName: ppkName.trim(),
       ppName: ppName.trim(),
+      ppAddress: ppAddress.trim() || 'Kompleks Civic Center',
       location: location.trim() || 'Kabupaten Nagekeo, Flores - NTT',
       executionDurationDays: Number(executionDurationDays),
       createdDate: new Date().toISOString().slice(0, 10),
@@ -521,6 +523,17 @@ export const CreatePackageModal: React.FC<CreatePackageModalProps> = ({
                   type="text"
                   value={ppName}
                   onChange={(e) => setPpName(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-xs border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#701524]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Alamat Pejabat Pengadaan</label>
+                <input
+                  type="text"
+                  value={ppAddress}
+                  onChange={(e) => setPpAddress(e.target.value)}
+                  placeholder="Contoh: Kompleks Civic Center"
                   className="w-full px-2.5 py-1.5 text-xs border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#701524]"
                 />
               </div>

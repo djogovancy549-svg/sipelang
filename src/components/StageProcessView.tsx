@@ -19,6 +19,9 @@ import { formatRupiah, getProcurementTypeLabel, formatDate } from '../utils/form
 import { ReviewMatrixModal } from './ReviewMatrixModal';
 import { ProcurementScheduleInvitationView } from './ProcurementScheduleInvitationView';
 import { ProcurementEvaluationView } from './ProcurementEvaluationView';
+import { ProcurementNegotiationView } from './ProcurementNegotiationView';
+import { AttendanceListView } from './AttendanceListView';
+import { ActivityDocumentationView } from './ActivityDocumentationView';
 import { MainNavTab } from './Sidebar';
 import {
   Calendar,
@@ -55,6 +58,9 @@ import {
   KeyRound,
   AlertTriangle,
   FileCheck2,
+  Sliders,
+  UserCheck,
+  Camera
 } from 'lucide-react';
 
 interface StageProcessViewProps {
@@ -62,10 +68,11 @@ interface StageProcessViewProps {
   documents?: DocumentItem[];
   onUpdatePackageStage: (updatedPkg: ProcurementPackage) => void;
   selectedPackageId?: string;
-  initialSubTab?: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'STAGE_WORKFLOW';
+  initialSubTab?: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'NEGOSIASI_HARGA' | 'DAFTAR_HADIR' | 'DOKUMENTASI_FOTO' | 'STAGE_WORKFLOW';
   onNavigateTab?: (tab: MainNavTab) => void;
   onOpenReviewDoc?: (doc: DocumentItem) => void;
   onUpdateDocumentReview?: (docId: string, status: ReviewStatus, notes: string) => void;
+  onShowToast?: (message: string, type: 'success' | 'error') => void;
 }
 
 // Fallback sample package if no packages exist in state
@@ -353,10 +360,11 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
   onNavigateTab,
   onOpenReviewDoc,
   onUpdateDocumentReview,
+  onShowToast,
 }) => {
   // Main sub-view tab: 'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'STAGE_WORKFLOW'
   const [activeSubTab, setActiveSubTab] = useState<
-    'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'STAGE_WORKFLOW'
+    'CHECKLIST_TABLE' | 'JADWAL_UNDANGAN' | 'EVALUASI_PENAWARAN' | 'NEGOSIASI_HARGA' | 'DAFTAR_HADIR' | 'DOKUMENTASI_FOTO' | 'STAGE_WORKFLOW'
   >(initialSubTab || 'CHECKLIST_TABLE');
 
   useEffect(() => {
@@ -771,21 +779,21 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
         </div>
 
         {/* Navigation Tabs between "Ceklist Kelengkapan Dokumen", "Penjadwalan & Buat Surat Undangan", and "6 Tahapan Proses" */}
-        <div className="flex items-center gap-2 pt-2 border-t border-stone-100 overflow-x-auto">
+        <div className="flex items-center gap-2 pt-2 border-t border-stone-100 overflow-x-auto pb-1 custom-scrollbar">
           <button
             type="button"
             onClick={() => setActiveSubTab('CHECKLIST_TABLE')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
               activeSubTab === 'CHECKLIST_TABLE'
-                ? 'bg-[#701524] text-white shadow-xs'
-                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                ? 'bg-[#701524] text-white border-[#701524] shadow-md scale-[1.02]'
+                : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400 hover:bg-stone-50'
             }`}
           >
             <ListChecks className="w-4 h-4" />
-            <span>Tabel Ceklist Kelengkapan Dokumen Pengadaan</span>
+            <span>Tabel Ceklist Dokumen</span>
             <span
-              className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                activeSubTab === 'CHECKLIST_TABLE' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                activeSubTab === 'CHECKLIST_TABLE' ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-500'
               }`}
             >
               {completedChecklistCount}/{localChecklist.length}
@@ -795,61 +803,79 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveSubTab('JADWAL_UNDANGAN')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
               activeSubTab === 'JADWAL_UNDANGAN'
-                ? 'bg-[#701524] text-white shadow-xs'
-                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                ? 'bg-amber-600 text-white border-amber-600 shadow-md scale-[1.02]'
+                : 'bg-white text-stone-600 border-stone-200 hover:border-amber-400 hover:bg-amber-50'
             }`}
           >
-            <Calendar className="w-4 h-4 text-amber-400" />
-            <span>Penjadwalan & Buat Surat Undangan</span>
-            <span
-              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                activeSubTab === 'JADWAL_UNDANGAN' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
-              }`}
-            >
-              Format Resmi Nagekeo
-            </span>
+            <Calendar className="w-4 h-4" />
+            <span>Jadwal & Undangan</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab('EVALUASI_PENAWARAN')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
               activeSubTab === 'EVALUASI_PENAWARAN'
-                ? 'bg-[#701524] text-white shadow-xs'
-                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                ? 'bg-rose-700 text-white border-rose-700 shadow-md scale-[1.02]'
+                : 'bg-white text-stone-600 border-stone-200 hover:border-rose-400 hover:bg-rose-50'
             }`}
           >
-            <FileCheck2 className="w-4 h-4 text-rose-300" />
-            <span>Evaluasi Penawaran (BA Evaluasi)</span>
-            <span
-              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                activeSubTab === 'EVALUASI_PENAWARAN' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'
-              }`}
-            >
-              Tahap 3
-            </span>
+            <FileCheck2 className="w-4 h-4" />
+            <span>Evaluasi Penawaran</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('NEGOSIASI_HARGA')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
+              activeSubTab === 'NEGOSIASI_HARGA'
+                ? 'bg-emerald-700 text-white border-emerald-700 shadow-md scale-[1.02]'
+                : 'bg-white text-stone-600 border-stone-200 hover:border-emerald-400 hover:bg-emerald-50'
+            }`}
+          >
+            <Sliders className="w-4 h-4" />
+            <span>Negosiasi Harga</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('DAFTAR_HADIR')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
+              activeSubTab === 'DAFTAR_HADIR'
+                ? 'bg-blue-700 text-white border-blue-700 shadow-md scale-[1.02]'
+                : 'bg-white text-stone-600 border-stone-200 hover:border-blue-400 hover:bg-blue-50'
+            }`}
+          >
+            <UserCheck className="w-4 h-4" />
+            <span>Daftar Hadir</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('DOKUMENTASI_FOTO')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
+              activeSubTab === 'DOKUMENTASI_FOTO'
+                ? 'bg-rose-600 text-white border-rose-600 shadow-md scale-[1.02]'
+                : 'bg-white text-stone-600 border-stone-200 hover:border-rose-400 hover:bg-rose-50'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>Dokumentasi Foto</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab('STAGE_WORKFLOW')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border-2 ${
               activeSubTab === 'STAGE_WORKFLOW'
-                ? 'bg-[#701524] text-white shadow-xs'
-                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                ? 'bg-stone-800 text-white border-stone-800 shadow-md scale-[1.02]'
+                : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400 hover:bg-stone-50'
             }`}
           >
             <SlidersHorizontal className="w-4 h-4" />
-            <span>Monitoring 6 Tahapan Proses & Upload Berkas</span>
-            <span
-              className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                activeSubTab === 'STAGE_WORKFLOW' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-700'
-              }`}
-            >
-              Tahap {currentStageInfo.stepNumber}
-            </span>
+            <span>Monitoring 6 Tahap</span>
           </button>
         </div>
       </div>
@@ -1169,6 +1195,42 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                                     <span>📝 Buat Formulir Evaluasi Penawaran</span>
                                   </button>
                                 )}
+
+                                {(item.id === 'dok-6' || item.title.toLowerCase().includes('negosiasi')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveSubTab('NEGOSIASI_HARGA')}
+                                    className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold rounded-md shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-emerald-400/40"
+                                    title="Buka Berita Acara Klarifikasi dan Negosiasi Harga"
+                                  >
+                                    <Sliders className="w-3.5 h-3.5 text-emerald-200" />
+                                    <span>📝 Buat BA Negosiasi Harga</span>
+                                  </button>
+                                )}
+
+                                {item.title.toLowerCase().includes('hadir') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveSubTab('DAFTAR_HADIR')}
+                                    className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white text-[10px] font-bold rounded-md shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-blue-400/40"
+                                    title="Buka Daftar Hadir Kegiatan"
+                                  >
+                                    <UserCheck className="w-3.5 h-3.5 text-blue-200" />
+                                    <span>📝 Isi Daftar Hadir</span>
+                                  </button>
+                                )}
+
+                                {item.title.toLowerCase().includes('dokumentasi') && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveSubTab('DOKUMENTASI_FOTO')}
+                                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded-md shadow-2xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-400/40"
+                                    title="Buka Dokumentasi Foto Kegiatan"
+                                  >
+                                    <Camera className="w-3.5 h-3.5 text-rose-200" />
+                                    <span>📝 Pilih Foto Dokumentasi</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1339,7 +1401,39 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 4: MONITORING 6 TAHAPAN PROSES PENGADAAN & UPLOAD BERKAS */}
+      {/* SUB-TAB 4: BERITA ACARA KLARIFIKASI DAN NEGOSIASI HARGA */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'NEGOSIASI_HARGA' && (
+        <ProcurementNegotiationView
+          procurementPackage={currentPkg}
+          onUpdatePackage={onUpdatePackageStage}
+          onShowToast={onShowToast}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB 5: DAFTAR HADIR KEGIATAN PEJABAT PENGADAAN */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'DAFTAR_HADIR' && (
+        <AttendanceListView
+          procurementPackage={currentPkg}
+          onUpdatePackage={onUpdatePackageStage}
+          onShowToast={onShowToast}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB 6: DOKUMENTASI FOTO KEGIATAN PEJABAT PENGADAAN */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'DOKUMENTASI_FOTO' && (
+        <ActivityDocumentationView
+          procurementPackage={currentPkg}
+          documents={documents}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB 7: MONITORING 6 TAHAPAN PROSES PENGADAAN & UPLOAD BERKAS */}
       {/* ========================================================================= */}
       {activeSubTab === 'STAGE_WORKFLOW' && (
         <div className="space-y-5">

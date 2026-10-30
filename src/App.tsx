@@ -426,6 +426,47 @@ export default function App() {
               />
             )}
 
+            {activeTab === 'negosiasi-harga' && (
+              <StageProcessView
+                packages={packages}
+                documents={documents}
+                onUpdatePackageStage={handleUpdatePackageStage}
+                selectedPackageId={stageTrackerPackageId}
+                initialSubTab="NEGOSIASI_HARGA"
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenReviewDoc={(doc) => openReviewForDocument(doc)}
+                onUpdateDocumentReview={handleUpdateDocumentReview}
+                onShowToast={showToast}
+              />
+            )}
+
+            {activeTab === 'daftar-hadir' && (
+              <StageProcessView
+                packages={packages}
+                documents={documents}
+                onUpdatePackageStage={handleUpdatePackageStage}
+                selectedPackageId={stageTrackerPackageId}
+                initialSubTab="DAFTAR_HADIR"
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenReviewDoc={(doc) => openReviewForDocument(doc)}
+                onUpdateDocumentReview={handleUpdateDocumentReview}
+                onShowToast={showToast}
+              />
+            )}
+
+            {activeTab === 'dokumentasi-foto' && (
+              <StageProcessView
+                packages={packages}
+                documents={documents}
+                onUpdatePackageStage={handleUpdatePackageStage}
+                selectedPackageId={stageTrackerPackageId}
+                initialSubTab="DOKUMENTASI_FOTO"
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenReviewDoc={(doc) => openReviewForDocument(doc)}
+                onUpdateDocumentReview={handleUpdateDocumentReview}
+              />
+            )}
+
             {activeTab === 'daftar-dokumen' && (
               <OfficialDocumentsArchive
                 packages={packages}

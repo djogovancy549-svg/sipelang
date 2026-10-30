@@ -843,6 +843,7 @@ export const ProcurementEvaluationView: React.FC<ProcurementEvaluationViewProps>
                   <Edit3 className="w-4 h-4 text-[#701524]" />
                   <span>Metadata & Pengaturan Evaluasi</span>
                 </h3>
+                <p className="text-[10px] text-stone-400 italic">Sesuaikan informasi formulir dan centang kriteria di bawah untuk memperbarui dokumen A4.</p>
                 <span className="text-[10px] text-stone-500 font-mono">Live Form</span>
               </div>
 
