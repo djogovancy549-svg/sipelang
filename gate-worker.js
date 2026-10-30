@@ -1,4 +1,4 @@
-/**
+/** v2
  * SIPELANG – Gerbang login untuk Cloudflare Worker (sipelang.djogovancy549.workers.dev)
  *
  * Variabel di Worker (Settings → Variables):
