@@ -1709,7 +1709,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({
                       setEnteredDeletePin(e.target.value);
                       if (deletePinError) setDeletePinError('');
                     }}
-                    placeholder="Masukkan PIN (e.g. 301026-pbj)"
+                    placeholder="Masukkan PIN Otorisasi"
                     className="w-full pl-9 pr-3 py-2 text-xs border border-stone-300 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-[#701524] tracking-wider"
                   />
                   <KeyRound className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
