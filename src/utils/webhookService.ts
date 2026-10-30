@@ -92,6 +92,8 @@ export async function sendWebhookPayload(
     | 'SCHEDULE_SAVED'
     | 'NEGOSIASI_SAVED'
     | 'ATTENDANCE_SAVED'
+    | 'PACKAGE_REPORT_UPDATED'
+    | 'PACKAGE_REPORT_DELETED'
     | 'ALL_DATA_SYNC',
   data: Record<string, any> // Expecting a flat object
 ): Promise<{ success: boolean; message: string }> {

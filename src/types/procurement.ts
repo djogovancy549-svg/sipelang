@@ -117,6 +117,23 @@ export interface ProcurementPackage {
   stages: Record<StageKey, PackageStageState>;
   documentChecklist?: DocumentChecklistItem[];
   notes?: string;
+  // Pelaporan Paket (Tender & PL) fields
+  methodType?: 'TENDER' | 'PL';
+  contractNo?: string;
+  ccoNumbers?: string[];
+  contractDate?: string;
+  contractEndDate?: string;
+  contractValue?: number;
+  executionPeriod?: string;
+  progressStatus?: number;
+  timelyStatus?: 'Tepat Waktu' | 'PHK' | 'Selesai' | 'Perpanjangan Waktu' | 'Sampai Tanggal';
+  timelyUntilDate?: string;
+  contractorName?: string;
+  dinasName?: string;
+  bidangName?: string;
+  handoverWork?: string;
+  financialStatus?: string;
+  pptkName?: string;
 }
 
 export type MatrixEvaluationStatus = 'MEMENUHI' | 'ADA_CATATAN' | 'TIDAK_MEMENUHI';

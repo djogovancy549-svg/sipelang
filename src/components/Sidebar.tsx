@@ -20,6 +20,7 @@ import {
   FileText,
   UserCheck,
   Image as ImageIcon,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export type MainNavTab = 
@@ -35,7 +36,8 @@ export type MainNavTab =
   | 'daftar-dokumen'
   | 'pengarsipan'
   | 'review-dokumen'
-  | 'penomoran-opd';
+  | 'penomoran-opd'
+  | 'pelaporan-paket';
 
 interface SidebarProps {
   activeTab: MainNavTab;
@@ -84,6 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null },
         { id: 'kelola-paket', label: 'Paket Pengadaan', icon: FolderKanban, badge: totalPackageCount },
+        { id: 'pelaporan-paket', label: 'Pelaporan Paket (Tender & PL)', icon: FileSpreadsheet, badge: null, highlight: true },
       ],
     },
     {

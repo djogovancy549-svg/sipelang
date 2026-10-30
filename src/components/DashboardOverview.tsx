@@ -277,6 +277,29 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
       </div>
 
+      {/* Quick Access Card for Pelaporan Paket Tender & PL */}
+      <div className="bg-gradient-to-r from-[#23090e] via-[#4a0e18] to-[#701524] text-white rounded-2xl p-4 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-amber-400 shrink-0 border border-white/20">
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-black text-xs tracking-wide uppercase text-amber-300">Menu Pelaporan Paket (Tender & PL)</h3>
+            <p className="text-[11px] text-rose-100/80 mt-0.5">
+              Rekap kontrak, CCO, progres fisik, status tepat waktu, keuangan, PPK, PPTK & sinkronisasi Google Sheet.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onNavigateTab('pelaporan-paket')}
+          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
+        >
+          <span>Buka Pelaporan Paket</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
       {/* 2. DEKORASI 1: RUNNING TEXT TICKER */}
       <MarqueeTicker className="rounded-xl shadow-xs" />
 

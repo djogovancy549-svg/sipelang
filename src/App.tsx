@@ -26,6 +26,7 @@ import { PackageDetailModal } from './components/PackageDetailModal';
 import { CreatePackageModal } from './components/CreatePackageModal';
 import { GoogleIntegrationModal } from './components/GoogleIntegrationModal';
 import { OfficialDocumentsArchive, DocumentRecord } from './components/OfficialDocumentsArchive';
+import { PackageReportingView } from './components/PackageReportingView';
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 
 export default function App() {
@@ -189,6 +190,12 @@ export default function App() {
     sendWebhookPayload('STAGE_UPDATED', updatedPkg);
   };
 
+  const handleUpdatePackageReport = (updatedPkg: ProcurementPackage) => {
+    setPackages((prev) =>
+      prev.map((p) => (p.id === updatedPkg.id ? updatedPkg : p))
+    );
+  };
+
   const handleUpdateDocumentReview = (docId: string, status: ReviewStatus, notes: string) => {
     setDocuments((prev) =>
       prev.map((doc) => {
@@ -295,6 +302,8 @@ export default function App() {
         return 'Review Dokumen (Telaah Kelayakan)';
       case 'penomoran-opd':
         return 'Pengaturan Penomoran Otomatis OPD';
+      case 'pelaporan-paket':
+        return 'Pelaporan Paket Pengadaan (Tender & PL)';
       default:
         return 'OPTIMA.DOK Nagekeo';
     }
@@ -498,6 +507,14 @@ export default function App() {
                 onAddOPD={handleAddOPD}
                 onUpdateOPD={handleUpdateOPD}
                 onDeleteOPD={handleDeleteOPD}
+              />
+            )}
+
+            {activeTab === 'pelaporan-paket' && (
+              <PackageReportingView
+                packages={packages}
+                onUpdatePackage={handleUpdatePackageReport}
+                onShowToast={showToast}
               />
             )}
           </div>
