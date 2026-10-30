@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ProcurementPackage, DocumentChecklistItem } from '../types/procurement';
 import { formatRupiah, formatDate } from '../utils/formatters';
 import { sendWebhookPayload } from '../utils/webhookService';
+import { SecurityPinModal } from './SecurityPinModal';
 import {
   Calendar,
   Printer,
@@ -169,6 +170,20 @@ export const ProcurementNegotiationView: React.FC<ProcurementNegotiationViewProp
     setNegItems(negItems.filter(n => n.id !== id));
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'neg' | 'clarification'; id: string; name: string } | null>(null);
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === 'neg') {
+      setNegItems(negItems.filter(n => n.id !== deleteTarget.id));
+      if (onShowToast) onShowToast('Item pekerjaan negosiasi berhasil dihapus.', 'success');
+    } else {
+      setClarifications(clarifications.filter(c => c.id !== deleteTarget.id));
+      if (onShowToast) onShowToast('Butir klarifikasi berhasil dihapus.', 'success');
+    }
+    setDeleteTarget(null);
+  };
+
   const calculateTotal = (items: NegotiationItem[], key: 'hpsUnit' | 'bidUnit' | 'negUnit') => {
     return items.reduce((sum, item) => sum + (item[key] * item.vol), 0);
   };
@@ -308,7 +323,8 @@ export const ProcurementNegotiationView: React.FC<ProcurementNegotiationViewProp
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-stone-500 font-mono">Item #{idx + 1}</span>
                         <button 
-                          onClick={() => handleRemoveNegItem(item.id)}
+                          type="button"
+                          onClick={() => setDeleteTarget({ type: 'neg', id: item.id, name: item.description || `Item #${idx + 1}` })}
                           className="p-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-all text-[10px] flex items-center gap-1 cursor-pointer"
                           title="Hapus Item"
                         >
@@ -651,6 +667,16 @@ export const ProcurementNegotiationView: React.FC<ProcurementNegotiationViewProp
           </div>
         </div>
       )}
+      {/* Security PIN Confirmation Modal */}
+      <SecurityPinModal
+        isOpen={!!deleteTarget}
+        title="Konfirmasi Penghapusan dengan PIN"
+        itemName={deleteTarget?.name}
+        itemTypeLabel={deleteTarget?.type === 'neg' ? 'Item Pekerjaan Negosiasi' : 'Butir Klarifikasi'}
+        warningNote="Data yang dihapus dari tabel negosiasi tidak dapat dikembalikan."
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

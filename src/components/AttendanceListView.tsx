@@ -15,7 +15,9 @@ import {
   Image as ImageIcon,
   UserCheck,
   Signature,
-  ChevronDown
+  ChevronDown,
+  Paperclip,
+  X
 } from 'lucide-react';
 import { sendWebhookPayload } from '../utils/webhookService';
 
@@ -23,6 +25,7 @@ interface AttendanceEntry {
   id: string;
   name: string;
   from: string;
+  signature?: string | null;
 }
 
 interface AttendanceListViewProps {
@@ -44,17 +47,17 @@ export const AttendanceListView: React.FC<AttendanceListViewProps> = ({
   const [pukul, setPukul] = useState('11.30-12.00');
 
   const [entries, setEntries] = useState<AttendanceEntry[]>([
-    { id: '1', name: 'ANTONIUS WANGGA POLE', from: 'CV. Bahtera Mandiri' },
-    { id: '2', name: 'FLORENTINA BUPU', from: 'Pj. Pengadaan' },
-    { id: '3', name: '', from: '' },
-    { id: '4', name: '', from: '' },
-    { id: '5', name: '', from: '' },
+    { id: '1', name: 'ANTONIUS WANGGA POLE', from: 'CV. Bahtera Mandiri', signature: null },
+    { id: '2', name: 'FLORENTINA BUPU', from: 'Pj. Pengadaan', signature: null },
+    { id: '3', name: '', from: '', signature: null },
+    { id: '4', name: '', from: '', signature: null },
+    { id: '5', name: '', from: '', signature: null },
   ]);
 
   const [customLogo, setCustomLogo] = useState<string | null>(() => localStorage.getItem('sipelang_official_logo'));
 
   const handleAddEntry = () => {
-    setEntries([...entries, { id: Date.now().toString(), name: '', from: '' }]);
+    setEntries([...entries, { id: Date.now().toString(), name: '', from: '', signature: null }]);
   };
 
   const handleRemoveEntry = (id: string) => {
@@ -246,14 +249,47 @@ export const AttendanceListView: React.FC<AttendanceListViewProps> = ({
                        <td className="border border-stone-900 p-2 text-center font-bold">{i + 1}</td>
                        <td className="border border-stone-900 p-2 font-bold uppercase">{e.name}</td>
                        <td className="border border-stone-900 p-2">{e.from}</td>
-                       <td className="border border-stone-900 p-2 relative overflow-hidden">
+                       <td className="border border-stone-900 p-2 relative h-16 text-center align-middle">
                           <span className="absolute top-1 left-1 text-[8px] text-stone-300 font-mono italic">{i + 1}</span>
-                          {e.name && (
-                            <div className="flex justify-center items-center h-full opacity-30">
-                               <div className="w-24 h-10 border border-dashed border-stone-400 rounded-full flex items-center justify-center scale-110">
-                                 <span className="text-[6px] font-mono">TEMPLATE SIGN</span>
-                               </div>
+                          {e.signature ? (
+                            <div className="relative group/sig inline-flex items-center justify-center h-12 mx-auto">
+                              <img src={e.signature} alt="Tanda Tangan" className="max-h-12 max-w-[120px] object-contain" />
+                              <button 
+                                onClick={() => {
+                                  const newEntries = [...entries];
+                                  newEntries[i].signature = null;
+                                  setEntries(newEntries);
+                                }}
+                                title="Hapus Tanda Tangan"
+                                className="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full p-0.5 opacity-0 group-hover/sig:opacity-100 transition-opacity shadow cursor-pointer"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
                             </div>
+                          ) : (
+                            <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-50 hover:bg-stone-100 border border-dashed border-stone-400 rounded-lg text-[10px] font-bold text-stone-700 transition-all shadow-2xs">
+                              <Paperclip className="w-3 h-3 text-blue-600" />
+                              <span>Tempel Tanda Tangan</span>
+                              <input 
+                                type="file" 
+                                accept="image/png, image/jpeg, image/jpg" 
+                                className="hidden" 
+                                onChange={(evt) => {
+                                  const file = evt.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (uploadEvent) => {
+                                      const res = uploadEvent.target?.result as string;
+                                      const newEntries = [...entries];
+                                      newEntries[i].signature = res;
+                                      setEntries(newEntries);
+                                      if (onShowToast) onShowToast(`Tanda tangan untuk ${e.name || `Baris ${i+1}`} berhasil ditempel.`, 'success');
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
                           )}
                        </td>
                      </tr>
